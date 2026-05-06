@@ -48,6 +48,14 @@ function changeColorClass(v: number): string {
   return v > 0 ? 'text-red-400' : v < 0 ? 'text-blue-400' : 'text-zinc-400'
 }
 
+function StreakBadge({ streak }: { streak: number }) {
+  if (streak === 0) return null
+  if (streak >= 3)  return <span className="text-[10px] px-1 py-0.5 rounded bg-green-900/60 text-green-400 font-medium whitespace-nowrap">連買{streak}日</span>
+  if (streak <= -3) return <span className="text-[10px] px-1 py-0.5 rounded bg-blue-900/60 text-blue-400 font-medium whitespace-nowrap">連賣{Math.abs(streak)}日</span>
+  const color = streak > 0 ? 'text-green-700' : 'text-blue-700'
+  return <span className={`text-[10px] ${color}`}>{streak > 0 ? '+' : ''}{streak}d</span>
+}
+
 function marginRatioColor(v: number): string {
   if (v >= 70) return 'text-red-400'
   if (v >= 40) return 'text-yellow-400'
@@ -132,7 +140,10 @@ function TodayRow({ stock, isSelected, onSelect }: RowBase) {
         {stock.relativeStrength > 0 ? '+' : ''}{stock.relativeStrength.toFixed(2)}
       </td>
       <td className={`py-2 px-3 text-sm text-right ${flowColor}`}>
-        {stock.institutionalFlow > 0 ? '+' : ''}{stock.institutionalFlow.toFixed(1)}億
+        <div className="flex items-center justify-end gap-1.5">
+          <span className="tabular-nums">{stock.institutionalFlow > 0 ? '+' : ''}{stock.institutionalFlow.toFixed(1)}億</span>
+          <StreakBadge streak={stock.institutionalStreak} />
+        </div>
       </td>
       <td className={`py-2 px-3 text-sm text-right font-medium ${concentrationColor(stock.concentration)}`}>
         {stock.concentration}

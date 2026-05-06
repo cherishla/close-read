@@ -4,10 +4,12 @@ import { BlockA } from './components/blocks/BlockA/BlockA'
 import { BlockB } from './components/blocks/BlockB/BlockB'
 import { BlockC } from './components/blocks/BlockC/BlockC'
 import { BlockD } from './components/blocks/BlockD/BlockD'
+import { BlockF } from './components/blocks/BlockF/BlockF'
 import { BlockG } from './components/blocks/BlockG/BlockG'
 import { BlockH } from './components/blocks/BlockH/BlockH'
 import { SectorPage } from './pages/SectorPage'
 import { StockPage } from './pages/StockPage'
+import { useObservationList } from './hooks/useObservationList'
 import type { Stock } from './types'
 
 function todayString() {
@@ -18,6 +20,7 @@ export function App() {
   const [date, setDate] = useState(todayString)
   const [selectedSector, setSelectedSector] = useState<string | null>(null)
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null)
+  const observationList = useObservationList(date)
 
   function handleDateChange(d: string) {
     setDate(d)
@@ -45,6 +48,7 @@ export function App() {
           date={date}
           onBack={() => setSelectedStock(null)}
           onBackToMain={handleBackToMain}
+          onAddToList={observationList.add}
         />
       </>
     )
@@ -59,6 +63,7 @@ export function App() {
           date={date}
           onBack={handleBackToMain}
           onOpenStock={setSelectedStock}
+          onAddToList={observationList.add}
         />
       </>
     )
@@ -91,7 +96,15 @@ export function App() {
           </div>
           <div className="md:col-span-2 space-y-4">
             <BlockG date={date} />
-            <BlockD date={date} onSelectSector={handleSelectSector} />
+            <BlockD
+              date={date}
+              onSelectSector={handleSelectSector}
+              onSelectStock={(sectorId, stock) => {
+                setSelectedSector(sectorId)
+                setSelectedStock(stock)
+              }}
+            />
+
           </div>
           <div className="space-y-4">
             <BlockC date={date} />
@@ -102,6 +115,14 @@ export function App() {
             </div>
           </div>
         </div>
+
+        <BlockF
+          items={observationList.items}
+          onRemove={observationList.remove}
+          onClear={observationList.clear}
+          onUpdateNote={observationList.updateNote}
+          onCopy={observationList.copy}
+        />
       </main>
     </div>
   )

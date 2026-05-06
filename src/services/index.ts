@@ -1,4 +1,5 @@
 import { stockFundamentalMock } from '../mocks/stockFundamental.mock'
+import { allStocksMock } from '../mocks/allStocks.mock'
 import { marketSummaryMock } from '../mocks/marketSummary.mock'
 import { marketStructureMock } from '../mocks/marketStructure.mock'
 import { fundFlowMock } from '../mocks/fundFlow.mock'
@@ -27,6 +28,7 @@ import type {
   StockPriceResponse,
   MarketNewsResponse,
   StockFundamentalResponse,
+  StockWithSector,
 } from '../types'
 
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms))
@@ -118,6 +120,11 @@ export async function fetchStockPrice(
 export async function fetchMarketNews(_date: string): Promise<MarketNewsResponse> {
   await delay(400)
   return marketNewsMock
+}
+
+export async function fetchAllStocks(_date: string): Promise<StockWithSector[]> {
+  await delay(420)
+  return allStocksMock
 }
 
 export async function fetchStockFundamental(

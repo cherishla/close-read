@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useStockDetail } from '../../../hooks/useStockDetail'
-import type { Stock, StockChip } from '../../../types'
+import { getStockRank } from '../../../utils/stockResearch'
+import { ChipFlowSection } from '../../stock/ChipFlowSection'
+import { NewsList } from '../../stock/NewsList'
+import type { Stock } from '../../../types'
 import { STOCK_CATEGORY_COLORS } from './BlockE'
 import { STOCK_CATEGORY_ZH_MAP } from '../../../utils/copyFormat'
 
@@ -9,74 +12,12 @@ type StockDetailPanelProps = {
   date: string
   sectorStocks: Stock[]
   onOpenStock: (s: Stock) => void
+  onAddToList?: () => void
 }
 
 type Tab = 'chip' | 'news'
 
-function FlowBar({ label, value, maxAbs }: { label: string; value: number; maxAbs: number }) {
-  const pct = maxAbs > 0 ? Math.abs(value) / maxAbs : 0
-  const color = value >= 0 ? '#f87171' : '#60a5fa'
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-zinc-500 w-16">{label}</span>
-        <span style={{ color }} className="font-medium tabular-nums">
-          {value > 0 ? '+' : ''}{value.toFixed(1)}億
-        </span>
-      </div>
-      <div className="w-full bg-zinc-700 rounded-full h-1">
-        <div className="h-1 rounded-full" style={{ width: `${pct * 100}%`, backgroundColor: color }} />
-      </div>
-    </div>
-  )
-}
-
-function ChipTab({ chip }: { chip: StockChip }) {
-  const maxInst = Math.max(
-    Math.abs(chip.foreignFlow), Math.abs(chip.trustFlow), Math.abs(chip.dealerFlow),
-    Math.abs(chip.mainPlayerFlow), Math.abs(chip.largeOrderDiff), 1
-  )
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2.5">
-        <p className="text-xs text-zinc-600 font-medium uppercase tracking-wide">法人買賣超</p>
-        <FlowBar label="外資"   value={chip.foreignFlow}    maxAbs={maxInst} />
-        <FlowBar label="投信"   value={chip.trustFlow}      maxAbs={maxInst} />
-        <FlowBar label="自營商" value={chip.dealerFlow}     maxAbs={maxInst} />
-        <FlowBar label="主力"   value={chip.mainPlayerFlow} maxAbs={maxInst} />
-      </div>
-      <div className="border-t border-zinc-800 pt-3 space-y-2.5">
-        <p className="text-xs text-zinc-600 font-medium uppercase tracking-wide">大單 / 信用</p>
-        <FlowBar label="大單差" value={chip.largeOrderDiff} maxAbs={maxInst} />
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <div className="bg-zinc-800 rounded-lg p-3 text-center">
-            <div className="text-base font-bold text-zinc-200">
-              {chip.marginBalance.toLocaleString()}
-            </div>
-            <div className="text-xs text-zinc-500 mt-0.5">融資餘額（張）</div>
-          </div>
-          <div className="bg-zinc-800 rounded-lg p-3 text-center">
-            <div className="text-base font-bold text-zinc-200">
-              {chip.shortBalance.toLocaleString()}
-            </div>
-            <div className="text-xs text-zinc-500 mt-0.5">融券餘額（張）</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function formatRelTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const h = Math.floor(diff / 3_600_000)
-  const m = Math.floor((diff % 3_600_000) / 60_000)
-  if (h > 0) return `${h} 小時前`
-  if (m > 0) return `${m} 分鐘前`
-  return '剛剛'
-}
-
-export function StockDetailPanel({ stock, date, sectorStocks, onOpenStock }: StockDetailPanelProps) {
+export function StockDetailPanel({ stock, date, sectorStocks, onOpenStock, onAddToList }: StockDetailPanelProps) {
   const [tab, setTab] = useState<Tab>('chip')
   const { data, isLoading } = useStockDetail(stock?.stockId ?? '', date)
 
@@ -84,8 +25,7 @@ export function StockDetailPanel({ stock, date, sectorStocks, onOpenStock }: Sto
 
   const rank = useMemo(() => {
     if (!stock || sectorStocks.length === 0) return null
-    const sorted = [...sectorStocks].sort((a, b) => b.relativeStrength - a.relativeStrength)
-    return sorted.findIndex(s => s.stockId === stock.stockId) + 1
+    return getStockRank(stock.stockId, sectorStocks)
   }, [stock, sectorStocks])
 
   if (!stock) {
@@ -134,14 +74,22 @@ export function StockDetailPanel({ stock, date, sectorStocks, onOpenStock }: Sto
         </div>
       )}
 
-      {/* Open stock CTA */}
-      <div className="px-4 py-2.5 border-b border-zinc-800">
+      {/* CTAs */}
+      <div className="px-4 py-2.5 border-b border-zinc-800 space-y-1.5">
         <button
           onClick={() => onOpenStock(stock)}
           className="w-full text-xs font-medium text-zinc-300 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 rounded-md py-1.5 transition-colors"
         >
-          完整分析 →
+          詳細研究 →
         </button>
+        {onAddToList && (
+          <button
+            onClick={onAddToList}
+            className="w-full text-xs font-medium text-zinc-500 hover:text-zinc-300 bg-zinc-800/50 hover:bg-zinc-800 rounded-md py-1.5 transition-colors"
+          >
+            + 加入研究清單
+          </button>
+        )}
       </div>
 
       {/* Tab bar */}
@@ -171,25 +119,9 @@ export function StockDetailPanel({ stock, date, sectorStocks, onOpenStock }: Sto
           </div>
         )}
 
-        {data && tab === 'chip' && <ChipTab chip={data.chip} />}
+        {data && tab === 'chip' && <ChipFlowSection chip={data.chip} />}
 
-        {data && tab === 'news' && (
-          <div className="space-y-3">
-            {data.news.length === 0 && (
-              <p className="text-sm text-zinc-500 text-center py-6">暫無相關新聞</p>
-            )}
-            {data.news.map((item) => (
-              <div key={item.id} className="border-b border-zinc-800/60 pb-3 last:border-0">
-                <p className="text-sm text-zinc-200 leading-snug mb-1">{item.title}</p>
-                <div className="flex items-center gap-2 text-xs text-zinc-500">
-                  <span>{item.source}</span>
-                  <span>·</span>
-                  <span>{formatRelTime(item.publishedAt)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {data && tab === 'news' && <NewsList news={data.news} />}
       </div>
     </div>
   )

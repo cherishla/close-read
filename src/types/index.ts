@@ -67,6 +67,7 @@ export type Sector = {
   change: number
   volumeShare: number
   institutionalFlow: number
+  institutionalStreak?: number
   breadth: number
   strengthScore: number
   category: SectorCategory
@@ -76,9 +77,15 @@ export type SectorsResponse = {
   sectors: Sector[]
 }
 
+export type StockWithSector = Stock & {
+  sectorId: string
+  sectorName: string
+  sectorCategory: SectorCategory
+}
+
 export type StockCategory = 'leader' | 'catchUp' | 'turning' | 'weak'
 export type StockSortKey =
-  | 'change' | 'relativeStrength' | 'institutionalFlow' | 'concentration'
+  | 'change' | 'relativeStrength' | 'institutionalFlow' | 'institutionalStreak' | 'concentration'
   | 'weekChange' | 'monthChange' | 'quarterChange'
   | 'marginRatio' | 'shortRatio' | 'daytradingRatio'
 export type SortDirection = 'asc' | 'desc'
@@ -89,6 +96,7 @@ export type Stock = {
   change: number
   relativeStrength: number
   institutionalFlow: number
+  institutionalStreak: number  // 正數=連續買超天數，負數=連續賣超天數，0=今天換方向
   volume: number
   category: StockCategory
   concentration: number  // 大單集中度 0–100

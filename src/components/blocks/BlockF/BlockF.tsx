@@ -110,11 +110,11 @@ export function BlockF({ items, onRemove, onClear, onUpdateNote, onCopy }: Block
   ) : undefined
 
   return (
-    <Card title={`F｜觀察清單（${items.length}）`} action={action}>
+    <Card title={`F｜研究清單（${items.length}）`} action={action}>
       {items.length === 0 ? (
         <div className="text-center py-8 text-zinc-600 text-sm">
-          尚無觀察個股<br />
-          <span className="text-xs">點選個股列表中的「+ 觀察」加入</span>
+          尚無研究項目<br />
+          <span className="text-xs">從個股列表加入待驗證標的</span>
         </div>
       ) : (
         <div className="space-y-2">

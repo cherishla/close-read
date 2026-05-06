@@ -4,10 +4,15 @@ import { marketStructureMock } from '../mocks/marketStructure.mock'
 import { marketSummaryMock } from '../mocks/marketSummary.mock'
 import { fundFlowMock } from '../mocks/fundFlow.mock'
 import { sectorsMock } from '../mocks/sectors.mock'
+import type { MarketSummaryResponse, MarketStructureResponse, SectorsResponse } from '../types'
 
 const brief = buildMarketBrief(marketStructureMock, marketSummaryMock, fundFlowMock, sectorsMock)
 
 describe('buildMarketBrief — marketStatus', () => {
+  it('produces a market regime label and description', () => {
+    expect(brief.regime.label).toBeTruthy()
+    expect(brief.regime.description).toBeTruthy()
+  })
   it('maps breadthScore from structure', () => {
     expect(typeof brief.marketStatus.breadthScore).toBe('number')
   })
@@ -62,14 +67,51 @@ describe('buildMarketBrief — sectors', () => {
 })
 
 describe('buildMarketBrief — contradictions', () => {
-  it('contradictions only contain fundInWeak or techStrongNoFund', () => {
+  it('contradictions include renderable title and description', () => {
     brief.contradictions.forEach((c) => {
-      expect(['fundInWeak', 'techStrongNoFund']).toContain(c.type)
+      expect(c.title).toBeTruthy()
+      expect(c.description).toBeTruthy()
     })
   })
-  it('contradiction type matches sector category', () => {
-    brief.contradictions.forEach((c) => {
-      expect(c.sector.category).toBe(c.type)
-    })
+  it('sector category contradictions preserve source sector', () => {
+    brief.contradictions
+      .filter((c) => c.type === 'fundInWeak' || c.type === 'techStrongNoFund')
+      .forEach((c) => {
+        expect(c.sector).toBeTruthy()
+        expect(c.sector?.category).toBe(c.type)
+      })
+  })
+  it('adds index-up breadth-weak contradiction from market structure', () => {
+    expect(brief.contradictions.some((c) => c.type === 'indexUpBreadthWeak')).toBe(true)
+  })
+})
+
+describe('buildMarketBrief — regime rules', () => {
+  it('classifies index up with weak breadth as indexStrongBreadthWeak', () => {
+    expect(brief.regime.type).toBe('indexStrongBreadthWeak')
+  })
+
+  it('classifies broad weakness when index, breadth, and sectors are weak', () => {
+    const weakSummary: MarketSummaryResponse = {
+      ...marketSummaryMock,
+      indicators: {
+        ...marketSummaryMock.indicators,
+        indexChange: { ...marketSummaryMock.indicators.indexChange, value: -1.2 },
+      },
+    }
+    const weakStructure: MarketStructureResponse = {
+      ...marketStructureMock,
+      indicators: {
+        ...marketStructureMock.indicators,
+        advanceRatio: { ...marketStructureMock.indicators.advanceRatio, value: 28 },
+      },
+    }
+    const weakSectors: SectorsResponse = {
+      sectors: sectorsMock.sectors.map((sector) => (
+        sector.category === 'strong' ? { ...sector, category: 'weak' as const, change: -1.1 } : sector
+      )),
+    }
+
+    expect(buildMarketBrief(weakStructure, weakSummary, fundFlowMock, weakSectors).regime.type).toBe('broadWeakness')
   })
 })

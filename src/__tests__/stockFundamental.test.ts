@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fundamentalValueColor } from '../utils/fundamental'
+import { fundamentalMetricColor, fundamentalValueColor } from '../utils/fundamental'
 import { fetchStockFundamental } from '../services'
 
 describe('fundamentalValueColor', () => {
@@ -17,6 +17,18 @@ describe('fundamentalValueColor', () => {
   })
   it('returns red for veryHigh', () => {
     expect(fundamentalValueColor('veryHigh')).toBe('text-red-400')
+  })
+})
+
+describe('fundamentalMetricColor', () => {
+  it('keeps high valuation as risk-colored', () => {
+    expect(fundamentalMetricColor('veryHigh', 'valuation')).toBe('text-red-400')
+  })
+  it('treats high quality as positive-colored', () => {
+    expect(fundamentalMetricColor('veryHigh', 'quality')).toBe('text-blue-400')
+  })
+  it('treats low growth as risk-colored', () => {
+    expect(fundamentalMetricColor('low', 'growth')).toBe('text-orange-400')
   })
 })
 

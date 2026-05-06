@@ -254,7 +254,89 @@ BlockB 放在主頁最上方，純文字 + 色塊，不加圖表：
 
 ---
 
-## 十二、Task D — 個股基本面資料確認（與 Task A 並行）
+## 十二、消費者化轉型計畫（v2，2026-05-04 新增）
+
+**策略**：不削減研究深度，在上方加一層「懶人包 + 刺激感」入口層。
+
+**三層架構**：
+
+```
+第一層：懶人包（今天發生什麼、主線在哪、市場劇本）
+第二層：刺激感（熱度榜、異常雷達、明日觀察清單）
+第三層：研究證據（現有功能不動）
+```
+
+**命名改版**：
+
+| 原名 | 新名 |
+|---|---|
+| 盤後研究摘要 | 今日盤後懶人包 |
+| 資金流向 | 今日資金主線 |
+| 強勢族群 | 今日熱門押注族群 |
+| 弱勢族群 | 今日降溫族群 |
+| 矛盾觀察 | 今日異常訊號 |
+| 今日市場新聞 | 影響今日主線的新聞 |
+
+### Sprint 1 — 懶人包完整化
+
+**T1：BlockB UI 完成**（已有 hooks + utils，補 UI）
+收合 preview：廣度分數 / 主線族群 / 熱門族群數 / 異常訊號數。
+展開五區塊：大盤狀態 / 今日資金主線 / 熱門押注族群 / 降溫族群 / 今日異常訊號。
+
+**T2：市場劇本分類**
+新增 `buildMarketScenario(briefData): MarketScenario`，純 rules-based。
+七種劇本從現有 breadthScore / volumeRatio / concentration 推導：全面擴散 / 資金集中 / 指數撐盤 / 弱中透強 / 資金輪動 / 高檔分歧 / 量縮觀望。
+
+**T3：懶人包 narrative 卡片**
+BlockB 展開頂部加結構化摘要（rules-based 文字，非 AI）：市場劇本 + 今日主線 + 今日異常 + 明日優先觀察。
+
+### Sprint 2 — 刺激感功能
+
+**T4：資金熱度榜**（擴展 BlockC）
+加熱度分數 `heat = volume × institutionalFlow × breadth`（歸一化），Top 5 排行。
+
+**T5：明日觀察清單**
+三組（主線延續 / 資金異常 / 風險降溫），每組 2–3 族群 + 族群核心股。
+命名：領漲股 → 族群核心股；補漲股 → 族群跟漲股；轉弱股 → 族群轉弱股。
+
+**T6：異常雷達**（升級矛盾觀察）
+現有兩種 + 新增兩種：volumeSurgeNoBreadth / indexUpButSmallCapLag。
+每條附「異常描述 + 值得注意的原因」，無多空方向。
+
+### Sprint 3 — 快速查詢入口
+
+**T7：可搜尋股票清單服務**
+`fetchStockIndex()` → `StockIndexEntry[]`，hook `useStockIndex()`。
+
+**T8：PageHeader 全局搜尋列**
+fuzzy match（stockId / stockName / sectorName），結果分族群/個股兩組，選擇直接導航。
+鍵盤支援：↑↓ 選擇，Enter 跳入，Esc 關閉。
+
+### Sprint 4 — 模式切換 + 付費架構標記
+
+**T9：懶人/專業模式切換**
+Header 右上 toggle；懶人模式預設顯示懶人包 + 觀察清單 + 熱度榜；localStorage 記憶。
+
+**T10：付費功能標記**
+觀察清單 / 異常雷達 / 市場劇本加 `PRO` badge，點擊顯示升級說明 modal（placeholder），不做真實 paywall。
+
+**T11：命名全面改版**
+依命名表更新所有 section headers、preview 文字、tests。
+
+### Dependency Graph
+
+```
+T1 → T2 → T3 (懶人包三步)
+T4 ← 現有 sectors + flow data
+T5 ← 現有 strong/weak + stockCategory
+T6 ← 現有 contradictions + 新分類
+T7 → T8 (搜尋兩步)
+T9 / T10 / T11 — 獨立
+```
+
+---
+
+## 十三、Task D — 個股基本面資料確認（與 Task A 並行）
 
 **前端部分已完成**：`StockFundamentalResponse` 型別已定義，mock 資料已建立（18 支個股），`useStockFundamental` hook 已完成，StockPage 基本面概覽已可用（mock 驅動）。
 

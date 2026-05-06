@@ -62,6 +62,91 @@
 
 ---
 
+---
+
+## 消費者化轉型 Sprint 1 — 懶人包完整化
+
+### T1：BlockB UI 完成
+
+- [ ] 收合 preview 顯示：廣度分數 / 主線族群 / 熱門族群數 / 異常訊號數
+- [ ] 展開顯示五區塊（新命名）：大盤狀態 / 今日資金主線 / 熱門押注族群 / 降溫族群 / 今日異常訊號
+- [ ] 各區塊錯誤可獨立重試
+- [ ] `npx tsc --noEmit` 無錯誤
+
+### T2：市場劇本分類
+
+- [ ] 新增 `src/utils/marketScenario.ts`，`buildMarketScenario(brief): MarketScenario`
+- [ ] 七種劇本規則（全面擴散 / 資金集中 / 指數撐盤 / 弱中透強 / 資金輪動 / 高檔分歧 / 量縮觀望）
+- [ ] Unit test 覆蓋七種劇本輸入
+
+### T3：懶人包 narrative 卡片
+
+- [ ] BlockB 展開頂部加結構化摘要卡片
+- [ ] 四區塊：市場劇本 / 今日主線 / 今日異常 / 明日優先觀察（最多 3 個族群）
+- [ ] 所有文字無多空結論、無預測語言
+
+---
+
+## 消費者化轉型 Sprint 2 — 刺激感功能
+
+### T4：資金熱度榜
+
+- [ ] BlockC 加熱度分數欄位
+- [ ] 排行 Top 5：熱度分數 + 法人 + 廣度
+- [ ] 點擊族群可進入 SectorPage
+
+### T5：明日觀察清單
+
+- [ ] 新 section（BlockB 最底部或獨立 card）
+- [ ] 三組：A. 主線延續 B. 資金異常 C. 風險降溫
+- [ ] 每組 2–3 族群 + 族群核心股命名（核心股 / 跟漲股 / 轉弱股 / 弱勢股）
+
+### T6：異常雷達升級
+
+- [ ] 新增 `volumeSurgeNoBreadth`、`indexUpButSmallCapLag` 兩種分類
+- [ ] 每條異常附說明文字，無多空詞彙
+- [ ] Unit test 覆蓋新分類規則
+
+---
+
+## 消費者化轉型 Sprint 3 — 快速查詢
+
+### T7：股票清單服務
+
+- [ ] `fetchStockIndex(): Promise<StockIndexEntry[]>` 加入 `src/services/index.ts`
+- [ ] Mock 涵蓋現有 18 支股票 + 所有族群
+- [ ] `useStockIndex()` hook
+
+### T8：PageHeader 全局搜尋
+
+- [ ] `src/components/layout/PageHeader.tsx` 加搜尋 input
+- [ ] 下拉分族群/個股兩組，fuzzy match
+- [ ] 鍵盤支援（↑↓ / Enter / Esc）
+- [ ] SectorPage / StockPage 也可用
+
+---
+
+## 消費者化轉型 Sprint 4 — 模式切換 + 付費標記
+
+### T9：懶人/專業模式切換
+
+- [ ] Header 右上 toggle（懶人 / 專業）
+- [ ] 懶人模式：BlockA/C/D/G 縮小，BlockB + 觀察清單 + 熱度榜為主
+- [ ] localStorage 記憶切換狀態
+
+### T10：付費功能標記
+
+- [ ] 觀察清單 / 異常雷達 / 市場劇本加 `PRO` badge
+- [ ] 點擊顯示升級說明 modal（placeholder 文字即可）
+
+### T11：命名全面改版
+
+- [ ] 依命名表更新所有 section headers
+- [ ] 更新 BlockB preview 文字
+- [ ] 更新相關 tests 字串
+
+---
+
 ## Task D — 個股基本面資料確認 ✅（前端 mock 部分完成）
 
 - [ ] 確認後端是否有 P/E 當期值 + 10年歷史序列（待後端確認）

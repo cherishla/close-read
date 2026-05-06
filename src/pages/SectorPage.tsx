@@ -7,16 +7,17 @@ import { SectorPerfChart } from '../components/blocks/BlockE/SectorPerfChart'
 import { StockDetailPanel } from '../components/blocks/BlockE/StockDetailPanel'
 import { SECTOR_CATEGORY_ZH } from '../utils/copyFormat'
 import { useMarketStructure } from '../hooks/useMarketStructure'
-import type { Stock } from '../types'
+import type { Stock, ObservationItem } from '../types'
 
 type SectorPageProps = {
   sectorId: string
   date: string
   onBack: () => void
   onOpenStock: (s: Stock) => void
+  onAddToList: (item: ObservationItem) => void
 }
 
-export function SectorPage({ sectorId, date, onBack, onOpenStock }: SectorPageProps) {
+export function SectorPage({ sectorId, date, onBack, onOpenStock, onAddToList }: SectorPageProps) {
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null)
 
   const { data: sectorsData } = useSectors(date)
@@ -33,6 +34,18 @@ export function SectorPage({ sectorId, date, onBack, onOpenStock }: SectorPagePr
 
   function handleSelectStock(stock: Stock) {
     setSelectedStock((prev) => prev?.stockId === stock.stockId ? null : stock)
+  }
+
+  function handleAddSelectedToList() {
+    if (!selectedStock || !sector) return
+    onAddToList({
+      stockId: selectedStock.stockId,
+      stockName: selectedStock.stockName,
+      sector: sector.sectorName,
+      stockCategory: selectedStock.category,
+      sectorCategory: sector.category,
+      breadthScore: Math.round(sector.breadth * 100),
+    })
   }
 
   return (
@@ -111,6 +124,7 @@ export function SectorPage({ sectorId, date, onBack, onOpenStock }: SectorPagePr
                   date={date}
                   sectorStocks={sectorStocks}
                   onOpenStock={onOpenStock}
+                  onAddToList={handleAddSelectedToList}
                 />
               </div>
             )}
@@ -123,6 +137,7 @@ export function SectorPage({ sectorId, date, onBack, onOpenStock }: SectorPagePr
               date={date}
               sectorStocks={sectorStocks}
               onOpenStock={onOpenStock}
+              onAddToList={selectedStock ? handleAddSelectedToList : undefined}
             />
           </div>
 

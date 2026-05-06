@@ -4,12 +4,16 @@ import { Card } from '../../ui/Card'
 import { SkeletonTable } from '../../ui/Skeleton'
 import { ErrorRetry } from '../../ui/ErrorRetry'
 import { SectorHeatmap, CATEGORY_DOT_COLOR, CATEGORY_ZH } from './SectorHeatmap'
-import type { HeatmapIndicator, SectorCategory } from '../../../types'
+import { StockScreenerPanel } from './StockScreenerPanel'
+import type { HeatmapIndicator, SectorCategory, Stock } from '../../../types'
 
 type BlockDProps = {
   date: string
   onSelectSector: (sectorId: string) => void
+  onSelectStock?: (sectorId: string, stock: Stock) => void
 }
+
+type BlockDTab = HeatmapIndicator | 'screener'
 
 const INDICATOR_OPTIONS: { key: HeatmapIndicator; label: string }[] = [
   { key: 'change',            label: '漲跌' },
@@ -89,18 +93,20 @@ function CategoryLegend() {
   )
 }
 
-export function BlockD({ date, onSelectSector }: BlockDProps) {
+export function BlockD({ date, onSelectSector, onSelectStock }: BlockDProps) {
   const { data, isLoading, isError, refetch } = useSectors(date)
-  const [indicator, setIndicator] = useState<HeatmapIndicator>('change')
+  const [activeTab, setActiveTab] = useState<BlockDTab>('change')
 
-  const indicatorSelector = (
+  const isScreener = activeTab === 'screener'
+
+  const tabBar = (
     <div className="flex items-center gap-1">
       {INDICATOR_OPTIONS.map((opt) => (
         <button
           key={opt.key}
-          onClick={() => setIndicator(opt.key)}
+          onClick={() => setActiveTab(opt.key)}
           className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
-            indicator === opt.key
+            activeTab === opt.key
               ? 'bg-zinc-600 text-zinc-100'
               : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'
           }`}
@@ -108,27 +114,52 @@ export function BlockD({ date, onSelectSector }: BlockDProps) {
           {opt.label}
         </button>
       ))}
+      <button
+        onClick={() => setActiveTab('screener')}
+        className={`text-xs px-2 py-0.5 rounded-full transition-colors ${
+          isScreener
+            ? 'bg-zinc-600 text-zinc-100'
+            : 'bg-zinc-800 text-zinc-500 hover:text-zinc-300'
+        }`}
+      >
+        個股研究
+      </button>
     </div>
   )
 
   return (
-    <Card title="D｜產業熱力圖" action={indicatorSelector}>
-      {isLoading && <SkeletonTable rows={6} />}
-      {isError && <ErrorRetry message="族群資料載入失敗" onRetry={() => refetch()} />}
+    <Card title="D｜產業熱力圖" action={tabBar}>
+      {/* Heatmap mode */}
+      {!isScreener && (
+        <>
+          {isLoading && <SkeletonTable rows={6} />}
+          {isError && <ErrorRetry message="族群資料載入失敗" onRetry={() => refetch()} />}
+          {data && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <p className="text-xs text-zinc-600">格子大小 = 成交占比。點格子進入產業頁。</p>
+                <ColorLegend indicator={activeTab as HeatmapIndicator} />
+              </div>
+              <SectorHeatmap
+                sectors={data.sectors}
+                indicator={activeTab as HeatmapIndicator}
+                onSelectSector={onSelectSector}
+              />
+              <CategoryLegend />
+            </div>
+          )}
+        </>
+      )}
 
-      {data && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <p className="text-xs text-zinc-600">格子大小 = 成交占比。點格子進入產業頁。</p>
-            <ColorLegend indicator={indicator} />
-          </div>
-          <SectorHeatmap
-            sectors={data.sectors}
-            indicator={indicator}
-            onSelectSector={onSelectSector}
-          />
-          <CategoryLegend />
-        </div>
+      {/* Screener mode */}
+      {isScreener && (
+        <StockScreenerPanel
+          date={date}
+          onSelectStock={onSelectStock ?? ((sectorId, stock) => {
+            onSelectSector(sectorId)
+            console.warn('onSelectStock not provided to BlockD, falling back to sector navigation', stock.stockId)
+          })}
+        />
       )}
     </Card>
   )

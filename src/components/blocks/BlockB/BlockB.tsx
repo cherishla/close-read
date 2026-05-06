@@ -41,15 +41,11 @@ function SectorRow({ sector }: { sector: Sector }) {
 }
 
 function ContradictionRow({ item }: { item: ContradictionItem }) {
-  const { sector, type } = item
-  const desc = type === 'fundInWeak'
-    ? `資金流入但走勢偏弱，廣度僅 ${Math.round(sector.breadth * 100)}%，需觀察是否底部`
-    : `技術面偏強，但法人買超偏弱，籌碼支撐存疑`
   return (
     <div className="text-xs text-zinc-400">
-      <span className="text-zinc-200 font-medium">{sector.sectorName}</span>
+      <span className="text-zinc-200 font-medium">{item.sector?.sectorName ?? item.title}</span>
       <span className="text-zinc-600 mx-1">·</span>
-      {desc}
+      {item.description}
     </div>
   )
 }
@@ -110,8 +106,8 @@ export function BlockB({ date }: BlockBProps) {
     const topInflow = brief.fundFlow.inflow[0]?.sectorName ?? '—'
     const strongCount = brief.strongSectors.length
     const contradiction = brief.contradictions.length > 0
-      ? ` · ⚡ 矛盾 ${brief.contradictions.length}` : ''
-    return `廣度 ${brief.marketStatus.breadthScore.toFixed(0)} · 流入：${topInflow} · 強勢 ${strongCount} 族群${contradiction}`
+      ? ` · 分歧 ${brief.contradictions.length}` : ''
+    return `${brief.regime.label} · 廣度 ${brief.marketStatus.breadthScore.toFixed(0)} · 流入：${topInflow} · 強勢 ${strongCount} 族群${contradiction}`
   }, [brief])
 
   return (
@@ -154,6 +150,16 @@ export function BlockB({ date }: BlockBProps) {
 
           {brief && (
             <div className="space-y-5">
+              {/* 市場環境 */}
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 px-3 py-3">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <p className="text-[10px] text-zinc-600 font-medium uppercase tracking-wide">市場環境</p>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-300 font-medium">
+                    {brief.regime.label}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 leading-relaxed">{brief.regime.description}</p>
+              </div>
 
               {/* 大盤狀態 */}
               <div>
@@ -235,13 +241,13 @@ export function BlockB({ date }: BlockBProps) {
                 </div>
               )}
 
-              {/* 矛盾觀察 — 為空時不渲染 */}
+              {/* 結構分歧 — 為空時不渲染 */}
               {brief.contradictions.length > 0 && (
                 <div>
-                  <p className="text-[10px] text-zinc-600 font-medium uppercase tracking-wide mb-2">⚡ 矛盾觀察</p>
+                  <p className="text-[10px] text-zinc-600 font-medium uppercase tracking-wide mb-2">結構分歧</p>
                   <div className="space-y-2">
                     {brief.contradictions.map((c) => (
-                      <ContradictionRow key={c.sector.sectorId} item={c} />
+                      <ContradictionRow key={`${c.type}-${c.sector?.sectorId ?? 'market'}`} item={c} />
                     ))}
                   </div>
                 </div>

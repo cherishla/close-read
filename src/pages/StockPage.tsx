@@ -10,9 +10,14 @@ import { useSectors } from '../hooks/useSectors'
 import { useSectorStocks } from '../hooks/useSectorStocks'
 import { STOCK_CATEGORY_COLORS } from '../components/blocks/BlockE/BlockE'
 import { STOCK_CATEGORY_ZH_MAP } from '../utils/copyFormat'
-import { fundamentalValueColor } from '../utils/fundamental'
+import { ChipFlowSection } from '../components/stock/ChipFlowSection'
+import { NewsList } from '../components/stock/NewsList'
+import { StockResearchChecks } from '../components/stock/StockResearchChecks'
+import { fundamentalMetricColor } from '../utils/fundamental'
 import { getPercentileLabelZh } from '../utils/percentile'
-import type { Stock, StockChip, StockPricePoint, FundamentalMetric } from '../types'
+import { buildStockChecks, getStockRank } from '../utils/stockResearch'
+import type { Stock, StockPricePoint, FundamentalMetric, ObservationItem } from '../types'
+import type { FundamentalMetricKind } from '../utils/fundamental'
 
 type StockPageProps = {
   stock: Stock
@@ -20,6 +25,7 @@ type StockPageProps = {
   date: string
   onBack: () => void
   onBackToMain: () => void
+  onAddToList?: (item: ObservationItem) => void
 }
 
 // ── colour helpers ──────────────────────────────────────────────
@@ -48,8 +54,16 @@ function MetricCell({ label, value, valueClass }: { label: string; value: string
   )
 }
 
-function FundamentalMetricCell({ label, metric }: { label: string; metric: FundamentalMetric }) {
-  const textColor = fundamentalValueColor(metric.percentileLabel)
+function FundamentalMetricCell({
+  label,
+  metric,
+  kind,
+}: {
+  label: string
+  metric: FundamentalMetric
+  kind: FundamentalMetricKind
+}) {
+  const textColor = fundamentalMetricColor(metric.percentileLabel, kind)
   const pctZh = getPercentileLabelZh(metric.percentileLabel)
   const sign = metric.unit === '%' && metric.value > 0 ? '+' : ''
   const display = metric.value === 0 && metric.unit !== '%' ? '—' : `${sign}${metric.value.toFixed(1)}${metric.unit}`
@@ -112,67 +126,6 @@ function KlineTooltip({ active, payload, label }: { active?: boolean; payload?: 
   )
 }
 
-// ── FlowBar ─────────────────────────────────────────────────────
-
-function FlowBar({ label, value, maxAbs }: { label: string; value: number; maxAbs: number }) {
-  const pct   = maxAbs > 0 ? Math.abs(value) / maxAbs : 0
-  const color = value >= 0 ? '#f87171' : '#60a5fa'
-  return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-zinc-500 w-16">{label}</span>
-        <span style={{ color }} className="font-medium tabular-nums">
-          {value > 0 ? '+' : ''}{value.toFixed(1)}億
-        </span>
-      </div>
-      <div className="w-full bg-zinc-700 rounded-full h-1">
-        <div className="h-1 rounded-full" style={{ width: `${pct * 100}%`, backgroundColor: color }} />
-      </div>
-    </div>
-  )
-}
-
-function ChipSection({ chip }: { chip: StockChip }) {
-  const maxInst = Math.max(
-    Math.abs(chip.foreignFlow), Math.abs(chip.trustFlow), Math.abs(chip.dealerFlow),
-    Math.abs(chip.mainPlayerFlow), Math.abs(chip.largeOrderDiff), 1
-  )
-  return (
-    <div className="space-y-4">
-      <div className="space-y-2.5">
-        <p className="text-xs text-zinc-600 font-medium uppercase tracking-wide">法人買賣超</p>
-        <FlowBar label="外資"   value={chip.foreignFlow}    maxAbs={maxInst} />
-        <FlowBar label="投信"   value={chip.trustFlow}      maxAbs={maxInst} />
-        <FlowBar label="自營商" value={chip.dealerFlow}     maxAbs={maxInst} />
-        <FlowBar label="主力"   value={chip.mainPlayerFlow} maxAbs={maxInst} />
-      </div>
-      <div className="border-t border-zinc-800 pt-3 space-y-2.5">
-        <p className="text-xs text-zinc-600 font-medium uppercase tracking-wide">大單 / 信用</p>
-        <FlowBar label="大單差" value={chip.largeOrderDiff} maxAbs={maxInst} />
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <div className="bg-zinc-800 rounded-lg p-3 text-center">
-            <div className="text-base font-bold text-zinc-200">{chip.marginBalance.toLocaleString()}</div>
-            <div className="text-xs text-zinc-500 mt-0.5">融資餘額（張）</div>
-          </div>
-          <div className="bg-zinc-800 rounded-lg p-3 text-center">
-            <div className="text-base font-bold text-zinc-200">{chip.shortBalance.toLocaleString()}</div>
-            <div className="text-xs text-zinc-500 mt-0.5">融券餘額（張）</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function formatRelTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const h = Math.floor(diff / 3_600_000)
-  const m = Math.floor((diff % 3_600_000) / 60_000)
-  if (h > 0) return `${h} 小時前`
-  if (m > 0) return `${m} 分鐘前`
-  return '剛剛'
-}
-
 function formatXDate(dateStr: string): string {
   const p = (dateStr as string).split('-')
   return `${p[1]}/${p[2]}`
@@ -182,7 +135,7 @@ type DetailTab = 'chip' | 'news'
 
 // ── main component ──────────────────────────────────────────────
 
-export function StockPage({ stock, sectorId, date, onBack, onBackToMain }: StockPageProps) {
+export function StockPage({ stock, sectorId, date, onBack, onBackToMain, onAddToList }: StockPageProps) {
   const [tab, setTab] = useState<DetailTab>('chip')
   const { data: priceData,       isLoading: priceLoading   } = useStockPrice(stock.stockId, date)
   const { data: detailData,      isLoading: detailLoading  } = useStockDetail(stock.stockId, date)
@@ -196,11 +149,27 @@ export function StockPage({ stock, sectorId, date, onBack, onBackToMain }: Stock
   const sectorStocks = stocksData?.stocks ?? []
   const rank = useMemo(() => {
     if (!sectorStocks.length) return null
-    const sorted = [...sectorStocks].sort((a, b) => b.relativeStrength - a.relativeStrength)
-    return sorted.findIndex(s => s.stockId === stock.stockId) + 1
+    return getStockRank(stock.stockId, sectorStocks)
   }, [sectorStocks, stock.stockId])
 
+  const stockChecks = useMemo(
+    () => buildStockChecks(stock, fundamentalData),
+    [stock, fundamentalData]
+  )
+
   const changeColor = stock.change > 0 ? 'text-red-400' : stock.change < 0 ? 'text-blue-400' : 'text-zinc-400'
+
+  function handleAddToList() {
+    if (!sector || !onAddToList) return
+    onAddToList({
+      stockId: stock.stockId,
+      stockName: stock.stockName,
+      sector: sector.sectorName,
+      stockCategory: stock.category,
+      sectorCategory: sector.category,
+      breadthScore: Math.round(sector.breadth * 100),
+    })
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950">
@@ -223,6 +192,14 @@ export function StockPage({ stock, sectorId, date, onBack, onBackToMain }: Stock
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STOCK_CATEGORY_COLORS[stock.category]}`}>
               {STOCK_CATEGORY_ZH_MAP[stock.category]}
             </span>
+            {onAddToList && sector && (
+              <button
+                onClick={handleAddToList}
+                className="ml-auto text-xs px-3 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-200 rounded-md transition-colors"
+              >
+                + 研究清單
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -231,6 +208,12 @@ export function StockPage({ stock, sectorId, date, onBack, onBackToMain }: Stock
 
         {/* ── 指標總覽 ── */}
         <div className="bg-zinc-900 rounded-xl border border-zinc-800 px-4 py-4 space-y-4">
+          {/* 四面向檢查 */}
+          <div>
+            <p className="text-xs text-zinc-600 font-medium mb-2">四面向檢查</p>
+            <StockResearchChecks checks={stockChecks} />
+          </div>
+
           {/* 今日 · 族群定位 */}
           <div>
             <p className="text-xs text-zinc-600 font-medium mb-2">今日 · 族群定位</p>
@@ -317,11 +300,11 @@ export function StockPage({ stock, sectorId, date, onBack, onBackToMain }: Stock
             <div>
               <p className="text-xs text-zinc-600 font-medium mb-2">基本面概覽</p>
               <div className="grid grid-cols-5 gap-2">
-                <FundamentalMetricCell label="P/E"   metric={fundamentalData.pe} />
-                <FundamentalMetricCell label="P/B"   metric={fundamentalData.pb} />
-                <FundamentalMetricCell label="ROE"   metric={fundamentalData.roe} />
-                <FundamentalMetricCell label="EPS YoY"  metric={fundamentalData.epsYoY} />
-                <FundamentalMetricCell label="營收 YoY" metric={fundamentalData.revenueYoY} />
+                <FundamentalMetricCell label="P/E"   metric={fundamentalData.pe} kind="valuation" />
+                <FundamentalMetricCell label="P/B"   metric={fundamentalData.pb} kind="valuation" />
+                <FundamentalMetricCell label="ROE"   metric={fundamentalData.roe} kind="quality" />
+                <FundamentalMetricCell label="EPS YoY"  metric={fundamentalData.epsYoY} kind="growth" />
+                <FundamentalMetricCell label="營收 YoY" metric={fundamentalData.revenueYoY} kind="growth" />
               </div>
             </div>
           )}
@@ -408,24 +391,8 @@ export function StockPage({ stock, sectorId, date, onBack, onBackToMain }: Stock
                 ))}
               </div>
             )}
-            {detailData && tab === 'chip' && <ChipSection chip={detailData.chip} />}
-            {detailData && tab === 'news' && (
-              <div className="space-y-3">
-                {detailData.news.length === 0 && (
-                  <p className="text-sm text-zinc-500 text-center py-6">暫無相關新聞</p>
-                )}
-                {detailData.news.map((item) => (
-                  <div key={item.id} className="border-b border-zinc-800/60 pb-3 last:border-0">
-                    <p className="text-sm text-zinc-200 leading-snug mb-1">{item.title}</p>
-                    <div className="flex items-center gap-2 text-xs text-zinc-500">
-                      <span>{item.source}</span>
-                      <span>·</span>
-                      <span>{formatRelTime(item.publishedAt)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            {detailData && tab === 'chip' && <ChipFlowSection chip={detailData.chip} />}
+            {detailData && tab === 'news' && <NewsList news={detailData.news} />}
           </div>
         </div>
 

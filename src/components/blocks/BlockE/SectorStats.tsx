@@ -31,6 +31,13 @@ function formatDate(d: string) {
   return `${dt.getMonth() + 1}/${dt.getDate()}`
 }
 
+function SectorStreakBadge({ streak }: { streak: number }) {
+  if (streak >= 3)  return <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-900/60 text-green-400 font-medium">法人連買{streak}日</span>
+  if (streak <= -3) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/60 text-blue-400 font-medium">法人連賣{Math.abs(streak)}日</span>
+  const color = streak > 0 ? 'text-green-700' : 'text-blue-700'
+  return <span className={`text-[10px] ${color}`}>法人 {streak > 0 ? '+' : ''}{streak}d</span>
+}
+
 function FlowBar({ label, value, maxAbs }: { label: string; value: number; maxAbs: number }) {
   const pct = maxAbs > 0 ? Math.abs(value) / maxAbs : 0
   const color = value >= 0 ? '#f87171' : '#60a5fa'
@@ -152,7 +159,12 @@ export function SectorStats({ sectorId, date, sector }: SectorStatsProps) {
         {/* ── 三大法人 ── */}
         {detail && (
           <div className="border-t border-zinc-800 pt-4">
-            <p className="text-xs text-zinc-500 mb-2">三大法人（億）</p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-zinc-500">三大法人（億）</p>
+              {sector.institutionalStreak !== undefined && sector.institutionalStreak !== 0 && (
+                <SectorStreakBadge streak={sector.institutionalStreak} />
+              )}
+            </div>
             <div className="space-y-2">
               <FlowBar label="外資" value={detail.foreignFlow} maxAbs={maxInst} />
               <FlowBar label="投信" value={detail.trustFlow}   maxAbs={maxInst} />

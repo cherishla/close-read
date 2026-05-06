@@ -4,7 +4,6 @@ import { Card } from '../../ui/Card'
 import { IndicatorRow } from '../../ui/IndicatorRow'
 import { SkeletonCard, SkeletonRow } from '../../ui/Skeleton'
 import { ErrorRetry } from '../../ui/ErrorRetry'
-import { StateSummarySlot } from './StateSummarySlot'
 import { getPercentileBarColor } from '../../../utils/percentile'
 
 type BlockAProps = {
@@ -38,7 +37,6 @@ export function BlockA({ date }: BlockAProps) {
           {summary.data && (
             <div className="bg-zinc-800 rounded-lg p-4">
               <p className="text-sm text-zinc-300 leading-relaxed">{summary.data.narrative}</p>
-              <StateSummarySlot summary={summary.data.stateSummary} />
             </div>
           )}
 
