@@ -7,7 +7,7 @@ import { buildMarketBrief } from '../../../utils/marketBrief'
 import { getPercentileColor, getPercentileLabelZh } from '../../../utils/percentile'
 import { ErrorRetry } from '../../ui/ErrorRetry'
 import type { Sector, PercentileLabel } from '../../../types'
-import type { ContradictionItem } from '../../../utils/marketBrief'
+import type { BriefInsightItem, ContradictionItem } from '../../../utils/marketBrief'
 
 type BlockBProps = { date: string }
 
@@ -44,6 +44,16 @@ function ContradictionRow({ item }: { item: ContradictionItem }) {
   return (
     <div className="text-xs text-zinc-400">
       <span className="text-zinc-200 font-medium">{item.sector?.sectorName ?? item.title}</span>
+      <span className="text-zinc-600 mx-1">·</span>
+      {item.description}
+    </div>
+  )
+}
+
+function InsightRow({ item }: { item: BriefInsightItem }) {
+  return (
+    <div className="text-xs text-zinc-400">
+      <span className="text-zinc-200 font-medium">{item.title}</span>
       <span className="text-zinc-600 mx-1">·</span>
       {item.description}
     </div>
@@ -150,6 +160,12 @@ export function BlockB({ date }: BlockBProps) {
 
           {brief && (
             <div className="space-y-5">
+              {/* 盤後懶人摘要 */}
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 px-3 py-3">
+                <p className="text-[10px] text-zinc-600 font-medium uppercase tracking-wide mb-1.5">盤後懶人摘要</p>
+                <p className="text-sm text-zinc-300 leading-relaxed">{brief.lazySummary}</p>
+              </div>
+
               {/* 市場環境 */}
               <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 px-3 py-3">
                 <div className="flex items-center gap-2 mb-1.5">
@@ -160,6 +176,30 @@ export function BlockB({ date }: BlockBProps) {
                 </div>
                 <p className="text-xs text-zinc-400 leading-relaxed">{brief.regime.description}</p>
               </div>
+
+              {/* 待驗證清單 */}
+              {brief.validationItems.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-zinc-600 font-medium uppercase tracking-wide mb-2">待驗證清單</p>
+                  <div className="space-y-2">
+                    {brief.validationItems.map((item) => (
+                      <InsightRow key={`validation-${item.title}`} item={item} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 延續性追蹤 */}
+              {brief.continuityItems.length > 0 && (
+                <div>
+                  <p className="text-[10px] text-zinc-600 font-medium uppercase tracking-wide mb-2">延續性追蹤</p>
+                  <div className="space-y-2">
+                    {brief.continuityItems.map((item) => (
+                      <InsightRow key={`continuity-${item.title}`} item={item} />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* 大盤狀態 */}
               <div>

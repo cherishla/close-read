@@ -13,6 +13,9 @@ describe('buildMarketBrief — marketStatus', () => {
     expect(brief.regime.label).toBeTruthy()
     expect(brief.regime.description).toBeTruthy()
   })
+  it('produces a plain-language lazy summary', () => {
+    expect(brief.lazySummary).toContain(brief.regime.label)
+  })
   it('maps breadthScore from structure', () => {
     expect(typeof brief.marketStatus.breadthScore).toBe('number')
   })
@@ -63,6 +66,25 @@ describe('buildMarketBrief — sectors', () => {
         brief.weakSectors[i]!.change
       )
     }
+  })
+})
+
+describe('buildMarketBrief — action-oriented research helpers', () => {
+  it('produces validation items without recommendation language', () => {
+    expect(brief.validationItems.length).toBeGreaterThan(0)
+    brief.validationItems.forEach((item) => {
+      expect(item.title).toBeTruthy()
+      expect(item.description).toBeTruthy()
+      expect(item.description).not.toMatch(/買進|賣出|進場|出場|推薦/)
+    })
+  })
+
+  it('produces continuity tracking items', () => {
+    expect(brief.continuityItems.length).toBeGreaterThan(0)
+    brief.continuityItems.forEach((item) => {
+      expect(item.title).toBeTruthy()
+      expect(item.description).toMatch(/追蹤|確認|延續|撤退/)
+    })
   })
 })
 

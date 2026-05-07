@@ -49,12 +49,21 @@ export type ContradictionItem = {
   sector?: Sector
 }
 
+export type BriefInsightItem = {
+  title: string
+  description: string
+  sector?: Sector
+}
+
 export type MarketBriefData = {
   regime: MarketRegime
+  lazySummary: string
   marketStatus: MarketStatusBrief
   fundFlow: FundFlowBrief
   strongSectors: Sector[]
   weakSectors: Sector[]
+  validationItems: BriefInsightItem[]
+  continuityItems: BriefInsightItem[]
   contradictions: ContradictionItem[]
 }
 
@@ -205,6 +214,112 @@ function buildContradictions(
   return items.slice(0, 6)
 }
 
+function buildLazySummary(
+  regime: MarketRegime,
+  structure: MarketStructureResponse,
+  summary: MarketSummaryResponse,
+  flow: FundFlowResponse,
+  strongSectors: Sector[],
+  weakSectors: Sector[],
+  contradictions: ContradictionItem[]
+): string {
+  const indexChange = summary.indicators.indexChange.value
+  const advanceRatio = structure.indicators.advanceRatio.value
+  const topInflow = flow.inflow[0]?.sectorName
+  const topOutflow = flow.outflow[0]?.sectorName
+  const direction = indexChange > 0.2 ? '指數收高' : indexChange < -0.2 ? '指數收低' : '指數變化不大'
+  const breadthText = advanceRatio >= 60
+    ? '上漲家數擴散'
+    : advanceRatio < 50
+      ? '但上漲家數沒有跟上'
+      : '廣度大致維持中性'
+  const flowText = topInflow && topOutflow
+    ? `資金主要流向 ${topInflow}，${topOutflow} 資金壓力較明顯`
+    : topInflow
+      ? `資金主要流向 ${topInflow}`
+      : '資金主線不明顯'
+  const strongText = strongSectors.length > 0
+    ? `強勢族群集中在 ${sectorNames(strongSectors)}`
+    : '今天沒有明顯強勢族群'
+  const weakText = weakSectors.length > 0 ? `，弱勢端以 ${sectorNames(weakSectors)} 較明顯` : ''
+  const splitText = contradictions.length > 0 ? `，另有 ${contradictions.length} 個結構分歧需要追蹤` : ''
+
+  return `${direction}，${breadthText}，整體屬於「${regime.label}」。${flowText}，${strongText}${weakText}${splitText}。`
+}
+
+function buildValidationItems(
+  strongSectors: Sector[],
+  contradictions: ContradictionItem[],
+  flow: FundFlowResponse
+): BriefInsightItem[] {
+  const items: BriefInsightItem[] = []
+
+  contradictions.slice(0, 3).forEach((item) => {
+    items.push({
+      title: item.sector?.sectorName ?? item.title,
+      description: item.description,
+      sector: item.sector,
+    })
+  })
+
+  strongSectors.slice(0, 2).forEach((sector) => {
+    items.push({
+      title: sector.sectorName,
+      description: `強度與廣度同步偏強，法人 ${sector.institutionalFlow > 0 ? '仍為流入' : '未同步支持'}，適合追蹤隔日是否延續到更多族群內個股。`,
+      sector,
+    })
+  })
+
+  const topInflowName = flow.inflow[0]?.sectorName
+  if (topInflowName && !items.some((item) => item.title === topInflowName)) {
+    items.push({
+      title: topInflowName,
+      description: '今日資金流入最明顯，需驗證後續是否只是單日集中，或能擴散成族群動能。',
+    })
+  }
+
+  return items.slice(0, 5)
+}
+
+function streakText(streak?: number): string {
+  if (!streak) return '法人方向尚未形成明顯連續性'
+  if (streak > 0) return `法人連續流入 ${streak} 日`
+  return `法人連續流出 ${Math.abs(streak)} 日`
+}
+
+function buildContinuityItems(strongSectors: Sector[], weakSectors: Sector[], sectors: Sector[]): BriefInsightItem[] {
+  const items: BriefInsightItem[] = []
+
+  strongSectors.slice(0, 3).forEach((sector) => {
+    items.push({
+      title: sector.sectorName,
+      description: `${streakText(sector.institutionalStreak)}，今日廣度 ${Math.round(sector.breadth * 100)}%，用來追蹤昨日強勢是否仍在擴散。`,
+      sector,
+    })
+  })
+
+  sectors
+    .filter((sector) => sector.category === 'fundInWeak' || sector.category === 'techStrongNoFund')
+    .slice(0, 2)
+    .forEach((sector) => {
+      items.push({
+        title: sector.sectorName,
+        description: `${streakText(sector.institutionalStreak)}，但價格、資金或廣度未完全同步，需追蹤延續性是否改善。`,
+        sector,
+      })
+    })
+
+  weakSectors.slice(0, 2).forEach((sector) => {
+    items.push({
+      title: sector.sectorName,
+      description: `${streakText(sector.institutionalStreak)}，廣度僅 ${Math.round(sector.breadth * 100)}%，需確認資金是否持續撤退。`,
+      sector,
+    })
+  })
+
+  return items.slice(0, 5)
+}
+
 export function buildMarketBrief(
   structure: MarketStructureResponse,
   summary: MarketSummaryResponse,
@@ -223,9 +338,13 @@ export function buildMarketBrief(
 
   const regime = buildMarketRegime(structure, summary, flow, strongSectors, weakSectors)
   const contradictions = buildContradictions(structure, summary, sectors.sectors)
+  const lazySummary = buildLazySummary(regime, structure, summary, flow, strongSectors, weakSectors, contradictions)
+  const validationItems = buildValidationItems(strongSectors, contradictions, flow)
+  const continuityItems = buildContinuityItems(strongSectors, weakSectors, sectors.sectors)
 
   return {
     regime,
+    lazySummary,
     marketStatus: {
       breadthScore: structure.breadthScore,
       breadthLabel: structure.indicators.advanceRatio.percentileLabel,
@@ -240,6 +359,8 @@ export function buildMarketBrief(
     },
     strongSectors,
     weakSectors,
+    validationItems,
+    continuityItems,
     contradictions,
   }
 }
