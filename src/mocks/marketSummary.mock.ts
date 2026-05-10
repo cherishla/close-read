@@ -2,7 +2,7 @@ import type { MarketSummaryResponse } from '../types'
 
 export const marketSummaryMock: MarketSummaryResponse = {
   narrative:
-    '今日成交量略高於 20MA，法人轉買但上漲家數比例僅 41%，顯示漲勢集中。資金集中度偏高（近一年 p72），後續需追蹤是否擴散至中小型股。',
+    '今日成交量略高於 20 日均量，法人轉買但上漲家數比例僅 41%，顯示漲勢集中。資金集中度處於近一年偏高水位，後續需追蹤是否擴散至中小型股。',
   stateSummary: undefined,
   indicators: {
     indexChange: {

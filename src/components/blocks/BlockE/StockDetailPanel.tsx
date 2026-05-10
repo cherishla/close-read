@@ -12,12 +12,11 @@ type StockDetailPanelProps = {
   date: string
   sectorStocks: Stock[]
   onOpenStock: (s: Stock) => void
-  onAddToList?: () => void
 }
 
 type Tab = 'chip' | 'news'
 
-export function StockDetailPanel({ stock, date, sectorStocks, onOpenStock, onAddToList }: StockDetailPanelProps) {
+export function StockDetailPanel({ stock, date, sectorStocks, onOpenStock }: StockDetailPanelProps) {
   const [tab, setTab] = useState<Tab>('chip')
   const { data, isLoading } = useStockDetail(stock?.stockId ?? '', date)
 
@@ -39,8 +38,8 @@ export function StockDetailPanel({ stock, date, sectorStocks, onOpenStock, onAdd
     )
   }
 
-  const changeColor = stock.change > 0 ? 'text-red-400' : stock.change < 0 ? 'text-blue-400' : 'text-zinc-400'
-  const rsColor = stock.relativeStrength > 0 ? 'text-red-400' : 'text-blue-400'
+  const changeColor = stock.change > 0 ? 'text-red-400' : stock.change < 0 ? 'text-green-400' : 'text-zinc-400'
+  const rsColor = stock.relativeStrength > 0 ? 'text-red-400' : 'text-green-400'
 
   return (
     <div className="bg-zinc-900 rounded-xl border border-zinc-800 flex flex-col">
@@ -82,14 +81,6 @@ export function StockDetailPanel({ stock, date, sectorStocks, onOpenStock, onAdd
         >
           詳細研究 →
         </button>
-        {onAddToList && (
-          <button
-            onClick={onAddToList}
-            className="w-full text-xs font-medium text-zinc-500 hover:text-zinc-300 bg-zinc-800/50 hover:bg-zinc-800 rounded-md py-1.5 transition-colors"
-          >
-            + 加入研究清單
-          </button>
-        )}
       </div>
 
       {/* Tab bar */}

@@ -6,7 +6,7 @@ type FlowBarProps = {
 
 export function FlowBar({ label, value, maxAbs }: FlowBarProps) {
   const pct = maxAbs > 0 ? Math.abs(value) / maxAbs : 0
-  const color = value >= 0 ? '#f87171' : '#60a5fa'
+  const color = value >= 0 ? '#f87171' : '#4ade80'
 
   return (
     <div className="space-y-1">

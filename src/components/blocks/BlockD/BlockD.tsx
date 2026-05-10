@@ -55,6 +55,13 @@ const LEGEND_STEPS: Record<HeatmapIndicator, LegendStep[]> = {
   ],
 }
 
+const INDICATOR_DESCRIPTIONS: Record<HeatmapIndicator, string> = {
+  change:            '顯示各族群今日漲跌幅，觀察哪些族群領漲或領跌。',
+  breadth:           '顯示各族群上漲家數比例，觀察漲勢是否廣泛擴散。',
+  institutionalFlow: '顯示各族群法人今日買賣超金額，觀察資金流向方向。',
+  strengthScore:     '顯示各族群綜合強度評分，結合價格、廣度與資金的綜合評估。',
+}
+
 const CATEGORY_ITEMS: { key: SectorCategory; label: string }[] = [
   { key: 'strong',           label: '強勢族群' },
   { key: 'fundInWeak',       label: '資金入但弱' },
@@ -128,7 +135,7 @@ export function BlockD({ date, onSelectSector, onSelectStock }: BlockDProps) {
   )
 
   return (
-    <Card title="D｜產業熱力圖" action={tabBar}>
+    <Card title="產業地圖" action={tabBar}>
       {/* Heatmap mode */}
       {!isScreener && (
         <>
@@ -137,7 +144,10 @@ export function BlockD({ date, onSelectSector, onSelectStock }: BlockDProps) {
           {data && (
             <div className="space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <p className="text-xs text-zinc-600">格子大小 = 成交占比。點格子進入產業頁。</p>
+                <p className="text-xs text-zinc-600">
+                  {INDICATOR_DESCRIPTIONS[activeTab as HeatmapIndicator]}
+                  {' '}格子大小 = 成交占比，點格子進入產業頁。
+                </p>
                 <ColorLegend indicator={activeTab as HeatmapIndicator} />
               </div>
               <SectorHeatmap

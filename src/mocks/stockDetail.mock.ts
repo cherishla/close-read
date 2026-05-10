@@ -64,17 +64,36 @@ const NEWS_POOL: Record<string, { title: string; source: string; tag?: string }[
   ],
 }
 
+function makeBalanceHistory(
+  seed: number, base: number, range: number, trend: number, days = 20
+): import('../types').ChipBalancePoint[] {
+  const start = new Date('2026-04-01')
+  let prev = Math.abs(base + Math.sin(seed * 0.3) * range * 0.5)
+  return Array.from({ length: days }, (_, i) => {
+    const d = new Date(start)
+    d.setDate(start.getDate() + i)
+    prev = Math.max(10, prev + trend + Math.sin(seed * 0.5 + i * 0.7) * range * 0.06)
+    return { date: d.toISOString().split('T')[0]!, value: Math.round(prev) }
+  })
+}
+
 function makeChip(seed: number): import('../types').StockChip {
   const r = (base: number, range: number) =>
     Math.round((base + Math.sin(seed * 0.7 + base) * range) * 10) / 10
+  const marginBase  = Math.abs(Math.round(r(5000, 8000)))
+  const shortBase   = Math.abs(Math.round(r(800, 1200)))
+  const marginTrend = Math.sin(seed * 1.1) * 40   // slight up or down drift
+  const shortTrend  = Math.sin(seed * 0.9) * 15
   return {
     foreignFlow:    r(15, 120),
     trustFlow:      r(8,  45),
     dealerFlow:     r(4,  30),
     mainPlayerFlow: r(20, 80),
     largeOrderDiff: r(12, 60),
-    marginBalance:  Math.abs(Math.round(r(5000, 8000))),
-    shortBalance:   Math.abs(Math.round(r(800, 1200))),
+    marginBalance:  marginBase,
+    shortBalance:   shortBase,
+    marginBalanceHistory: makeBalanceHistory(seed,     marginBase, 800,  marginTrend),
+    shortBalanceHistory:  makeBalanceHistory(seed + 5, shortBase,  200,  shortTrend),
   }
 }
 

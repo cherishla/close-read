@@ -1,7 +1,7 @@
 import type { PercentileLabel } from '../types'
 
 export const PERCENTILE_COLORS: Record<PercentileLabel, string> = {
-  veryLow: 'bg-blue-950 text-blue-400',
+  veryLow: 'bg-zinc-800 text-zinc-300',
   low: 'bg-zinc-800 text-zinc-400',
   mid: 'bg-zinc-800 text-zinc-400',
   high: 'bg-orange-950 text-orange-400',
@@ -9,7 +9,7 @@ export const PERCENTILE_COLORS: Record<PercentileLabel, string> = {
 }
 
 export const PERCENTILE_BAR_COLORS: Record<PercentileLabel, string> = {
-  veryLow: 'bg-blue-500',
+  veryLow: 'bg-zinc-400',
   low: 'bg-zinc-600',
   mid: 'bg-zinc-500',
   high: 'bg-orange-500',

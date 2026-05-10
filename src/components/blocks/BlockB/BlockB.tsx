@@ -22,7 +22,7 @@ function PctBadge({ label }: { label: PercentileLabel }) {
 }
 
 function signColor(v: number) {
-  return v > 0 ? 'text-red-400' : v < 0 ? 'text-blue-400' : 'text-zinc-400'
+  return v > 0 ? 'text-red-400' : v < 0 ? 'text-green-400' : 'text-zinc-400'
 }
 
 function SectorRow({ sector }: { sector: Sector }) {
@@ -237,7 +237,7 @@ export function BlockB({ date }: BlockBProps) {
                   <div className="flex flex-wrap gap-x-3 gap-y-1">
                     <span className="text-zinc-500 shrink-0">流出</span>
                     {brief.fundFlow.outflow.map((f) => (
-                      <span key={f.sectorName} className="text-blue-400">
+                      <span key={f.sectorName} className="text-green-400">
                         {f.sectorName} {f.amount.toFixed(0)}億
                       </span>
                     ))}

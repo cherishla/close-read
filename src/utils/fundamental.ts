@@ -3,8 +3,8 @@ import type { PercentileLabel } from '../types'
 export type FundamentalMetricKind = 'valuation' | 'quality' | 'growth'
 
 const FUNDAMENTAL_VALUE_COLORS: Record<PercentileLabel, string> = {
-  veryLow:  'text-blue-400',
-  low:      'text-blue-400',
+  veryLow:  'text-zinc-300',
+  low:      'text-zinc-400',
   mid:      'text-zinc-400',
   high:     'text-orange-400',
   veryHigh: 'text-red-400',
@@ -14,8 +14,8 @@ const QUALITY_VALUE_COLORS: Record<PercentileLabel, string> = {
   veryLow:  'text-red-400',
   low:      'text-orange-400',
   mid:      'text-zinc-400',
-  high:     'text-blue-400',
-  veryHigh: 'text-blue-400',
+  high:     'text-zinc-300',
+  veryHigh: 'text-zinc-300',
 }
 
 export function fundamentalValueColor(label: PercentileLabel): string {

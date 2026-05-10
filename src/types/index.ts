@@ -68,6 +68,10 @@ export type Sector = {
   volumeShare: number
   institutionalFlow: number
   institutionalStreak?: number
+  institutionalCumulative5d?: number  // 近5日法人累積淨買超(億)
+  institutionalAvgCost?: number       // 法人均成本估算(元)
+  marginRatio?: number                // 融資使用率 0–100 (sector 聚合)
+  daytradingRatio?: number            // 當沖比 0–100 (sector 聚合)
   breadth: number
   strengthScore: number
   category: SectorCategory
@@ -110,6 +114,11 @@ export type Stock = {
   daytradingRatio: number  // 當沖比 0–100
 }
 
+export type ChipBalancePoint = {
+  date: string
+  value: number
+}
+
 export type StockChip = {
   foreignFlow: number
   trustFlow: number
@@ -118,6 +127,8 @@ export type StockChip = {
   largeOrderDiff: number
   marginBalance: number
   shortBalance: number
+  marginBalanceHistory: ChipBalancePoint[]
+  shortBalanceHistory: ChipBalancePoint[]
 }
 
 export type StockNewsItem = {

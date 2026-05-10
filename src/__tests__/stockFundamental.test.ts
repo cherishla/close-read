@@ -3,11 +3,11 @@ import { fundamentalMetricColor, fundamentalValueColor } from '../utils/fundamen
 import { fetchStockFundamental } from '../services'
 
 describe('fundamentalValueColor', () => {
-  it('returns blue for veryLow', () => {
-    expect(fundamentalValueColor('veryLow')).toBe('text-blue-400')
+  it('returns neutral for veryLow', () => {
+    expect(fundamentalValueColor('veryLow')).toBe('text-zinc-300')
   })
-  it('returns blue for low', () => {
-    expect(fundamentalValueColor('low')).toBe('text-blue-400')
+  it('returns neutral for low', () => {
+    expect(fundamentalValueColor('low')).toBe('text-zinc-400')
   })
   it('returns zinc for mid', () => {
     expect(fundamentalValueColor('mid')).toBe('text-zinc-400')
@@ -24,8 +24,8 @@ describe('fundamentalMetricColor', () => {
   it('keeps high valuation as risk-colored', () => {
     expect(fundamentalMetricColor('veryHigh', 'valuation')).toBe('text-red-400')
   })
-  it('treats high quality as positive-colored', () => {
-    expect(fundamentalMetricColor('veryHigh', 'quality')).toBe('text-blue-400')
+  it('treats high quality as neutral-colored', () => {
+    expect(fundamentalMetricColor('veryHigh', 'quality')).toBe('text-zinc-300')
   })
   it('treats low growth as risk-colored', () => {
     expect(fundamentalMetricColor('low', 'growth')).toBe('text-orange-400')

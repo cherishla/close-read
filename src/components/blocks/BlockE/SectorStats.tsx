@@ -8,7 +8,16 @@ import { useSectorDetail } from '../../../hooks/useSectorDetail'
 import { useSectorFundFlow } from '../../../hooks/useSectorFundFlow'
 import { useSectorStocks } from '../../../hooks/useSectorStocks'
 import { Card } from '../../ui/Card'
-import type { Sector, StockCategory } from '../../../types'
+import type { Sector, Stock, StockCategory } from '../../../types'
+
+function buildChipSummaryLine(alerts: Stock[]): string {
+  const names = alerts.slice(0, 2).map((s) => s.stockName).join('、')
+  const hasBoth = alerts.some((s) => s.marginRatio > 60 && s.daytradingRatio > 45)
+  if (hasBoth) return `${names}融資與當沖同步偏高，短線波動風險需留意`
+  const hasMargin = alerts.some((s) => s.marginRatio > 60)
+  if (hasMargin) return `${names}融資使用率偏高，注意槓桿風險`
+  return `${names}當沖比偏高，投機氣氛較重`
+}
 
 type SectorStatsProps = {
   sectorId: string
@@ -21,7 +30,7 @@ const STOCK_CAT_ZH: Record<StockCategory, string> = {
 }
 
 const STOCK_CAT_COLOR: Record<StockCategory, string> = {
-  leader: '#f87171', catchUp: '#fb923c', turning: '#facc15', weak: '#60a5fa',
+  leader: '#f87171', catchUp: '#fb923c', turning: '#facc15', weak: '#4ade80',
 }
 
 const STOCK_CATS: StockCategory[] = ['leader', 'catchUp', 'turning', 'weak']
@@ -32,15 +41,15 @@ function formatDate(d: string) {
 }
 
 function SectorStreakBadge({ streak }: { streak: number }) {
-  if (streak >= 3)  return <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-900/60 text-green-400 font-medium">法人連買{streak}日</span>
-  if (streak <= -3) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/60 text-blue-400 font-medium">法人連賣{Math.abs(streak)}日</span>
-  const color = streak > 0 ? 'text-green-700' : 'text-blue-700'
+  if (streak >= 3)  return <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-900/60 text-red-400 font-medium">法人連買{streak}日</span>
+  if (streak <= -3) return <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-900/60 text-green-400 font-medium">法人連賣{Math.abs(streak)}日</span>
+  const color = streak > 0 ? 'text-red-700' : 'text-green-700'
   return <span className={`text-[10px] ${color}`}>法人 {streak > 0 ? '+' : ''}{streak}d</span>
 }
 
 function FlowBar({ label, value, maxAbs }: { label: string; value: number; maxAbs: number }) {
   const pct = maxAbs > 0 ? Math.abs(value) / maxAbs : 0
-  const color = value >= 0 ? '#f87171' : '#60a5fa'
+  const color = value >= 0 ? '#f87171' : '#4ade80'
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
@@ -89,13 +98,13 @@ export function SectorStats({ sectorId, date, sector }: SectorStatsProps) {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-zinc-500 mb-1.5">上漲家數比例</p>
-            <span className="text-2xl font-bold" style={{ color: breadthPct >= 50 ? '#f87171' : '#60a5fa' }}>
+            <span className="text-2xl font-bold" style={{ color: breadthPct >= 50 ? '#f87171' : '#4ade80' }}>
               {breadthPct}%
             </span>
             <div className="mt-1.5 w-full bg-zinc-700 rounded-full h-1.5">
               <div
                 className="h-1.5 rounded-full"
-                style={{ width: `${breadthPct}%`, backgroundColor: breadthPct >= 50 ? '#f87171' : '#60a5fa' }}
+                style={{ width: `${breadthPct}%`, backgroundColor: breadthPct >= 50 ? '#f87171' : '#4ade80' }}
               />
             </div>
           </div>
@@ -146,7 +155,7 @@ export function SectorStats({ sectorId, date, sector }: SectorStatsProps) {
                 />
                 <Bar dataKey="flow" radius={[2, 2, 0, 0]}>
                   {flowData.map((entry, i) => (
-                    <Cell key={i} fill={entry.flow >= 0 ? '#f87171' : '#60a5fa'} fillOpacity={0.85} />
+                    <Cell key={i} fill={entry.flow >= 0 ? '#f87171' : '#4ade80'} fillOpacity={0.85} />
                   ))}
                 </Bar>
               </BarChart>
@@ -165,13 +174,60 @@ export function SectorStats({ sectorId, date, sector }: SectorStatsProps) {
                 <SectorStreakBadge streak={sector.institutionalStreak} />
               )}
             </div>
-            <div className="space-y-2">
-              <FlowBar label="外資" value={detail.foreignFlow} maxAbs={maxInst} />
-              <FlowBar label="投信" value={detail.trustFlow}   maxAbs={maxInst} />
-              <FlowBar label="自營" value={detail.dealerFlow}  maxAbs={maxInst} />
-            </div>
+            {detail.foreignFlow === 0 && detail.trustFlow === 0 && detail.dealerFlow === 0 && sector.institutionalFlow !== 0 ? (
+              <p className="text-xs text-zinc-600">暫無拆分資料，目前以法人合計觀察</p>
+            ) : (
+              <div className="space-y-2">
+                <FlowBar label="外資" value={detail.foreignFlow} maxAbs={maxInst} />
+                <FlowBar label="投信" value={detail.trustFlow}   maxAbs={maxInst} />
+                <FlowBar label="自營" value={detail.dealerFlow}  maxAbs={maxInst} />
+              </div>
+            )}
           </div>
         )}
+
+        {/* ── 籌碼警示 ── */}
+        {stocks && (() => {
+          const alerts = stocks.stocks.filter(
+            (s) => s.marginRatio > 60 || s.daytradingRatio > 45
+          )
+          return (
+            <div className="border-t border-zinc-800 pt-4">
+              <p className="text-xs text-zinc-500 mb-2">籌碼警示</p>
+              {alerts.length === 0 ? (
+                <p className="text-xs text-zinc-700">今日無籌碼異常個股</p>
+              ) : (
+                <>
+                  <p className="text-[10px] text-zinc-500 mb-2">{buildChipSummaryLine(alerts)}</p>
+                  <div className="space-y-2">
+                  {alerts.map((s) => {
+                    const highMargin = s.marginRatio > 60
+                    const highDaytrading = s.daytradingRatio > 45
+                    const riskStyle =
+                      highMargin && highDaytrading ? 'bg-orange-950 text-orange-400' :
+                      highMargin                   ? 'bg-amber-950 text-amber-400' :
+                                                     'bg-purple-950 text-purple-400'
+                    const riskLabel =
+                      highMargin && highDaytrading ? '雙重' :
+                      highMargin                   ? '融資' : '當沖'
+                    return (
+                      <div key={s.stockId} className="flex items-center gap-2">
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 ${riskStyle}`}>
+                          {riskLabel}
+                        </span>
+                        <span className="text-xs text-zinc-200 truncate flex-1">{s.stockName}</span>
+                        <span className="text-[10px] text-zinc-500 shrink-0 tabular-nums">
+                          融 {s.marginRatio.toFixed(0)}% 沖 {s.daytradingRatio.toFixed(0)}%
+                        </span>
+                      </div>
+                    )
+                  })}
+                  </div>
+                </>
+              )}
+            </div>
+          )
+        })()}
 
       </div>
     </Card>

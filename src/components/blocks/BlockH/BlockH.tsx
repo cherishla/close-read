@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { useMarketNews } from '../../../hooks/useMarketNews'
 import type { MarketNewsItem } from '../../../types'
 
 type BlockHProps = {
   date: string
   vertical?: boolean
+  maxVisible?: number
 }
 
 const TAG_COLORS: Record<string, string> = {
@@ -80,14 +82,29 @@ function SkeletonNewsRow() {
   )
 }
 
-export function BlockH({ date, vertical }: BlockHProps) {
+export function BlockH({ date, vertical, maxVisible }: BlockHProps) {
+  const [expanded, setExpanded] = useState(false)
   const { data, isLoading } = useMarketNews(date)
 
   if (vertical) {
+    const news = data?.news ?? []
+    const hasMore = maxVisible != null && news.length > maxVisible
+    const displayNews = hasMore && !expanded ? news.slice(0, maxVisible) : news
+
     return (
-      <div className="space-y-0">
-        {isLoading && [0, 1, 2, 3, 4].map((i) => <SkeletonNewsRow key={i} />)}
-        {data?.news.map((item) => <NewsRow key={item.id} item={item} />)}
+      <div>
+        <div className="space-y-0">
+          {isLoading && [0, 1, 2].map((i) => <SkeletonNewsRow key={i} />)}
+          {displayNews.map((item) => <NewsRow key={item.id} item={item} />)}
+        </div>
+        {hasMore && (
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            className="mt-2 text-[10px] text-zinc-600 hover:text-zinc-400 transition-colors"
+          >
+            {expanded ? '收起' : `顯示更多 ${news.length - maxVisible!} 則`}
+          </button>
+        )}
       </div>
     )
   }

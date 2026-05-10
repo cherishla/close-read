@@ -31,8 +31,8 @@ export type MarketStatusBrief = {
 }
 
 export type FundFlowBrief = {
-  inflow: { sectorName: string; amount: number }[]
-  outflow: { sectorName: string; amount: number }[]
+  inflow: { sectorId: string; sectorName: string; amount: number }[]
+  outflow: { sectorId: string; sectorName: string; amount: number }[]
   concentrationLabel: PercentileLabel
 }
 
@@ -55,6 +55,18 @@ export type BriefInsightItem = {
   sector?: Sector
 }
 
+export type ResearchItemType = 'priority' | 'turningStrong' | 'overheated' | 'weakening'
+
+export type ResearchItem = {
+  type: ResearchItemType
+  sectorId: string
+  sectorName: string
+  headline: string
+  reasons: string[]
+  watchPoint?: string
+  rank?: number
+}
+
 export type MarketBriefData = {
   regime: MarketRegime
   lazySummary: string
@@ -65,6 +77,7 @@ export type MarketBriefData = {
   validationItems: BriefInsightItem[]
   continuityItems: BriefInsightItem[]
   contradictions: ContradictionItem[]
+  researchItems: ResearchItem[]
 }
 
 function isHigh(label: PercentileLabel): boolean {
@@ -320,6 +333,88 @@ function buildContinuityItems(strongSectors: Sector[], weakSectors: Sector[], se
   return items.slice(0, 5)
 }
 
+function buildResearchItems(sectors: Sector[]): ResearchItem[] {
+  const items: ResearchItem[] = []
+
+  sectors
+    .filter((s) => s.category === 'strong' && (s.institutionalStreak ?? 0) >= 2 && s.institutionalFlow > 20)
+    .sort((a, b) => b.strengthScore - a.strengthScore)
+    .slice(0, 3)
+    .forEach((s, i) =>
+      items.push({
+        type: 'priority',
+        rank: i + 1,
+        sectorId: s.sectorId,
+        sectorName: s.sectorName,
+        headline: '強勢延續，資金是否持續流入',
+        reasons: [
+          `強度 ${s.strengthScore.toFixed(0)}，廣度 ${Math.round(s.breadth * 100)}%`,
+          `法人連買 ${s.institutionalStreak} 日，今日 +${s.institutionalFlow.toFixed(0)} 億`,
+        ],
+        watchPoint: '資金是否持續流入，廣度是否維持或擴散',
+      })
+    )
+
+  sectors
+    .filter((s) => s.category === 'fundInWeak' && (s.institutionalStreak ?? 0) > 0)
+    .slice(0, 2)
+    .forEach((s) =>
+      items.push({
+        type: 'turningStrong',
+        sectorId: s.sectorId,
+        sectorName: s.sectorName,
+        headline: '資金轉強，廣度是否擴散待確認',
+        reasons: [
+          `法人今日 +${s.institutionalFlow.toFixed(0)} 億，連買 ${s.institutionalStreak} 日`,
+          `廣度 ${Math.round(s.breadth * 100)}%，技術面尚未跟上`,
+        ],
+        watchPoint: '廣度是否持續擴散，技術面是否跟上形成明確方向',
+      })
+    )
+
+  sectors
+    .filter((s) => (s.marginRatio ?? 0) > 60 || (s.daytradingRatio ?? 0) > 45)
+    .sort(
+      (a, b) =>
+        Math.max(b.marginRatio ?? 0, b.daytradingRatio ?? 0) -
+        Math.max(a.marginRatio ?? 0, a.daytradingRatio ?? 0)
+    )
+    .slice(0, 2)
+    .forEach((s) => {
+      const reasons: string[] = []
+      if ((s.marginRatio ?? 0) > 60) reasons.push(`融資使用率 ${s.marginRatio?.toFixed(0)}%，槓桿偏高`)
+      if ((s.daytradingRatio ?? 0) > 45) reasons.push(`當沖比 ${s.daytradingRatio?.toFixed(0)}%，投機氣氛偏重`)
+      items.push({
+        type: 'overheated',
+        sectorId: s.sectorId,
+        sectorName: s.sectorName,
+        headline: '風險升高，籌碼是否降溫',
+        reasons,
+        watchPoint: '融資或當沖比是否回落，注意短線波動加劇風險',
+      })
+    })
+
+  sectors
+    .filter((s) => s.category === 'weak' && (s.institutionalStreak ?? 0) <= -2)
+    .sort((a, b) => (a.institutionalStreak ?? 0) - (b.institutionalStreak ?? 0))
+    .slice(0, 2)
+    .forEach((s) =>
+      items.push({
+        type: 'weakening',
+        sectorId: s.sectorId,
+        sectorName: s.sectorName,
+        headline: '弱勢觀察，是否持續弱於大盤',
+        reasons: [
+          `法人連賣 ${Math.abs(s.institutionalStreak ?? 0)} 日，今日 ${s.institutionalFlow.toFixed(0)} 億`,
+          `廣度 ${Math.round(s.breadth * 100)}%，族群持續偏弱`,
+        ],
+        watchPoint: '是否出現止跌訊號，或資金流出是否持續擴大',
+      })
+    )
+
+  return items
+}
+
 export function buildMarketBrief(
   structure: MarketStructureResponse,
   summary: MarketSummaryResponse,
@@ -341,6 +436,7 @@ export function buildMarketBrief(
   const lazySummary = buildLazySummary(regime, structure, summary, flow, strongSectors, weakSectors, contradictions)
   const validationItems = buildValidationItems(strongSectors, contradictions, flow)
   const continuityItems = buildContinuityItems(strongSectors, weakSectors, sectors.sectors)
+  const researchItems = buildResearchItems(sectors.sectors)
 
   return {
     regime,
@@ -353,8 +449,8 @@ export function buildMarketBrief(
       concentrationLabel: structure.indicators.concentration.percentileLabel,
     },
     fundFlow: {
-      inflow: flow.inflow.slice(0, 3).map((f) => ({ sectorName: f.sectorName, amount: f.amount })),
-      outflow: flow.outflow.slice(0, 3).map((f) => ({ sectorName: f.sectorName, amount: f.amount })),
+      inflow: flow.inflow.slice(0, 3).map((f) => ({ sectorId: f.sectorId, sectorName: f.sectorName, amount: f.amount })),
+      outflow: flow.outflow.slice(0, 3).map((f) => ({ sectorId: f.sectorId, sectorName: f.sectorName, amount: f.amount })),
       concentrationLabel: flow.concentration.percentileLabel,
     },
     strongSectors,
@@ -362,5 +458,6 @@ export function buildMarketBrief(
     validationItems,
     continuityItems,
     contradictions,
+    researchItems,
   }
 }

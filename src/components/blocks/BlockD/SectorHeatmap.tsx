@@ -18,10 +18,10 @@ type HoveredSector = {
 }
 
 export const CATEGORY_DOT_COLOR: Record<SectorCategory, string> = {
-  strong:           '#22c55e',
+  strong:           '#ef4444',
   fundInWeak:       '#f97316',
   techStrongNoFund: '#eab308',
-  weak:             '#71717a',
+  weak:             '#22c55e',
 }
 
 export const CATEGORY_ZH: Record<SectorCategory, string> = {
@@ -210,6 +210,7 @@ export function SectorHeatmap({ sectors, indicator, onSelectSector }: SectorHeat
           data={data}
           dataKey="size"
           aspectRatio={4 / 3}
+          isAnimationActive={false}
           content={(props) => {
             const p = props as typeof props & {
               change: number
@@ -255,7 +256,7 @@ export function SectorHeatmap({ sectors, indicator, onSelectSector }: SectorHeat
         >
           <div className="font-semibold text-zinc-100 mb-1">{hoveredSector.name}</div>
           <div className="text-zinc-400">
-            漲跌：<span className={hoveredSector.change >= 0 ? 'text-red-400' : 'text-blue-400'}>
+            漲跌：<span className={hoveredSector.change >= 0 ? 'text-red-400' : 'text-green-400'}>
               {hoveredSector.change > 0 ? '+' : ''}{hoveredSector.change.toFixed(2)}%
             </span>
           </div>
@@ -266,7 +267,7 @@ export function SectorHeatmap({ sectors, indicator, onSelectSector }: SectorHeat
             廣度：<span className="text-zinc-200">{(hoveredSector.breadth * 100).toFixed(0)}%</span>
           </div>
           <div className="text-zinc-400">
-            法人：<span className={hoveredSector.institutionalFlow >= 0 ? 'text-red-400' : 'text-blue-400'}>
+            法人：<span className={hoveredSector.institutionalFlow >= 0 ? 'text-red-400' : 'text-green-400'}>
               {hoveredSector.institutionalFlow > 0 ? '+' : ''}{hoveredSector.institutionalFlow.toFixed(1)}億
             </span>
           </div>

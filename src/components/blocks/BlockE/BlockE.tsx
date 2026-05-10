@@ -10,8 +10,6 @@ import { STOCK_CATEGORY_ZH_MAP } from '../../../utils/copyFormat'
 type BlockEProps = {
   date: string
   sectorId: string
-  breadthScore: number
-  selectedStock?: Stock | null
   onSelectStock: (s: Stock) => void
 }
 
@@ -19,7 +17,7 @@ export const STOCK_CATEGORY_COLORS: Record<StockCategory, string> = {
   leader:  'bg-red-950 text-red-400',
   catchUp: 'bg-orange-950 text-orange-400',
   turning: 'bg-yellow-950 text-yellow-400',
-  weak:    'bg-blue-950 text-blue-400',
+  weak:    'bg-green-950 text-green-400',
 }
 
 type TableTab = 'today' | 'period' | 'risk'
@@ -32,7 +30,7 @@ type SortState = { key: StockSortKey; dir: SortDirection }
 
 const TAB_DEFAULTS: Record<TableTab, SortState> = {
   today:  { key: 'relativeStrength', dir: 'desc' },
-  period: { key: 'weekChange',       dir: 'desc' },
+  period: { key: 'monthChange',      dir: 'desc' },
   risk:   { key: 'marginRatio',      dir: 'desc' },
 }
 
@@ -40,19 +38,19 @@ const TAB_DEFAULTS: Record<TableTab, SortState> = {
 
 function concentrationColor(v: number): string {
   if (v >= 70) return 'text-red-400'
-  if (v <= 30) return 'text-blue-400'
+  if (v <= 30) return 'text-green-400'
   return 'text-zinc-400'
 }
 
 function changeColorClass(v: number): string {
-  return v > 0 ? 'text-red-400' : v < 0 ? 'text-blue-400' : 'text-zinc-400'
+  return v > 0 ? 'text-red-400' : v < 0 ? 'text-green-400' : 'text-zinc-400'
 }
 
 function StreakBadge({ streak }: { streak: number }) {
   if (streak === 0) return null
-  if (streak >= 3)  return <span className="text-[10px] px-1 py-0.5 rounded bg-green-900/60 text-green-400 font-medium whitespace-nowrap">連買{streak}日</span>
-  if (streak <= -3) return <span className="text-[10px] px-1 py-0.5 rounded bg-blue-900/60 text-blue-400 font-medium whitespace-nowrap">連賣{Math.abs(streak)}日</span>
-  const color = streak > 0 ? 'text-green-700' : 'text-blue-700'
+  if (streak >= 3)  return <span className="text-[10px] px-1 py-0.5 rounded bg-red-900/60 text-red-400 font-medium whitespace-nowrap">連買{streak}日</span>
+  if (streak <= -3) return <span className="text-[10px] px-1 py-0.5 rounded bg-green-900/60 text-green-400 font-medium whitespace-nowrap">連賣{Math.abs(streak)}日</span>
+  const color = streak > 0 ? 'text-red-700' : 'text-green-700'
   return <span className={`text-[10px] ${color}`}>{streak > 0 ? '+' : ''}{streak}d</span>
 }
 
@@ -91,14 +89,12 @@ function SortableTh({ label, sortKey, current, onSort, className = '' }: Sortabl
   )
 }
 
-type RowBase = { stock: Stock; isSelected: boolean; onSelect: (s: Stock) => void }
+type RowBase = { stock: Stock; onSelect: (s: Stock) => void }
 
-function SelectedTr({ isSelected, onSelect, stock, children }: RowBase & { children: React.ReactNode }) {
+function StockTr({ onSelect, stock, children }: RowBase & { children: React.ReactNode }) {
   return (
     <tr
-      className={`transition-colors cursor-pointer border-l-2 ${
-        isSelected ? 'bg-zinc-700/60 border-l-zinc-400' : 'hover:bg-zinc-800/70 border-l-transparent'
-      }`}
+      className="hover:bg-zinc-800/70 cursor-pointer transition-colors"
       onClick={() => onSelect(stock)}
     >
       {children}
@@ -127,19 +123,20 @@ function CategoryCell({ stock }: { stock: Stock }) {
 
 // ── per-tab row renderers ───────────────────────────────────────
 
-function TodayRow({ stock, isSelected, onSelect }: RowBase) {
-  const rsColor   = changeColorClass(stock.relativeStrength)
-  const flowColor = changeColorClass(stock.institutionalFlow)
+function TodayRow({ stock, onSelect }: RowBase) {
   return (
-    <SelectedTr stock={stock} isSelected={isSelected} onSelect={onSelect}>
+    <StockTr stock={stock} onSelect={onSelect}>
       <StockCell stock={stock} />
       <td className={`py-2 px-3 text-sm font-semibold text-right ${changeColorClass(stock.change)}`}>
         {stock.change > 0 ? '+' : ''}{stock.change.toFixed(2)}%
       </td>
-      <td className={`py-2 px-3 text-sm text-right ${rsColor}`}>
+      <td className={`py-2 px-3 text-sm text-right tabular-nums ${changeColorClass(stock.weekChange)}`}>
+        {stock.weekChange > 0 ? '+' : ''}{stock.weekChange.toFixed(2)}%
+      </td>
+      <td className={`py-2 px-3 text-sm text-right ${changeColorClass(stock.relativeStrength)}`}>
         {stock.relativeStrength > 0 ? '+' : ''}{stock.relativeStrength.toFixed(2)}
       </td>
-      <td className={`py-2 px-3 text-sm text-right ${flowColor}`}>
+      <td className={`py-2 px-3 text-sm text-right ${changeColorClass(stock.institutionalFlow)}`}>
         <div className="flex items-center justify-end gap-1.5">
           <span className="tabular-nums">{stock.institutionalFlow > 0 ? '+' : ''}{stock.institutionalFlow.toFixed(1)}億</span>
           <StreakBadge streak={stock.institutionalStreak} />
@@ -149,17 +146,14 @@ function TodayRow({ stock, isSelected, onSelect }: RowBase) {
         {stock.concentration}
       </td>
       <CategoryCell stock={stock} />
-    </SelectedTr>
+    </StockTr>
   )
 }
 
-function PeriodRow({ stock, isSelected, onSelect }: RowBase) {
+function PeriodRow({ stock, onSelect }: RowBase) {
   return (
-    <SelectedTr stock={stock} isSelected={isSelected} onSelect={onSelect}>
+    <StockTr stock={stock} onSelect={onSelect}>
       <StockCell stock={stock} />
-      <td className={`py-2 px-3 text-sm text-right ${changeColorClass(stock.weekChange)}`}>
-        {stock.weekChange > 0 ? '+' : ''}{stock.weekChange.toFixed(2)}%
-      </td>
       <td className={`py-2 px-3 text-sm text-right ${changeColorClass(stock.monthChange)}`}>
         {stock.monthChange > 0 ? '+' : ''}{stock.monthChange.toFixed(2)}%
       </td>
@@ -167,13 +161,13 @@ function PeriodRow({ stock, isSelected, onSelect }: RowBase) {
         {stock.quarterChange > 0 ? '+' : ''}{stock.quarterChange.toFixed(2)}%
       </td>
       <CategoryCell stock={stock} />
-    </SelectedTr>
+    </StockTr>
   )
 }
 
-function RiskRow({ stock, isSelected, onSelect }: RowBase) {
+function RiskRow({ stock, onSelect }: RowBase) {
   return (
-    <SelectedTr stock={stock} isSelected={isSelected} onSelect={onSelect}>
+    <StockTr stock={stock} onSelect={onSelect}>
       <StockCell stock={stock} />
       <td className={`py-2 px-3 text-sm text-right ${marginRatioColor(stock.marginRatio)}`}>
         {stock.marginRatio.toFixed(0)}%
@@ -188,7 +182,7 @@ function RiskRow({ stock, isSelected, onSelect }: RowBase) {
         {stock.concentration}
       </td>
       <CategoryCell stock={stock} />
-    </SelectedTr>
+    </StockTr>
   )
 }
 
@@ -198,7 +192,8 @@ function TodayHead({ sort, onSort }: { sort: SortState; onSort: (k: StockSortKey
   return (
     <tr className="border-b border-zinc-800">
       <th className="py-2 px-3 text-xs text-zinc-500 font-medium">個股</th>
-      <SortableTh label="漲跌"    sortKey="change"            current={sort} onSort={onSort} className="text-right" />
+      <SortableTh label="今日"    sortKey="change"            current={sort} onSort={onSort} className="text-right" />
+      <SortableTh label="近週"    sortKey="weekChange"        current={sort} onSort={onSort} className="text-right" />
       <SortableTh label="相對強弱" sortKey="relativeStrength"  current={sort} onSort={onSort} className="text-right" />
       <SortableTh label="法人"    sortKey="institutionalFlow" current={sort} onSort={onSort} className="text-right" />
       <SortableTh label="集中度"  sortKey="concentration"     current={sort} onSort={onSort} className="text-right" />
@@ -211,7 +206,6 @@ function PeriodHead({ sort, onSort }: { sort: SortState; onSort: (k: StockSortKe
   return (
     <tr className="border-b border-zinc-800">
       <th className="py-2 px-3 text-xs text-zinc-500 font-medium">個股</th>
-      <SortableTh label="一週%"  sortKey="weekChange"    current={sort} onSort={onSort} className="text-right" />
       <SortableTh label="一月%"  sortKey="monthChange"   current={sort} onSort={onSort} className="text-right" />
       <SortableTh label="一季%"  sortKey="quarterChange" current={sort} onSort={onSort} className="text-right" />
       <th className="py-2 px-3 text-xs text-zinc-500 font-medium text-right">分類</th>
@@ -234,7 +228,7 @@ function RiskHead({ sort, onSort }: { sort: SortState; onSort: (k: StockSortKey)
 
 // ── main component ──────────────────────────────────────────────
 
-export function BlockE({ date, sectorId, breadthScore: _breadthScore, selectedStock, onSelectStock }: BlockEProps) {
+export function BlockE({ date, sectorId, onSelectStock }: BlockEProps) {
   const { data, isLoading, isError, refetch } = useSectorStocks(sectorId, date)
   const { data: sectorsData } = useSectors(date)
   const [activeTab, setActiveTab] = useState<TableTab>('today')
@@ -282,28 +276,26 @@ export function BlockE({ date, sectorId, breadthScore: _breadthScore, selectedSt
   )
 
   return (
-    <Card title={`E｜個股結構 — ${sectorName}`} action={tabBar}>
+    <Card title={`個股結構 — ${sectorName}`} action={tabBar}>
       {isLoading && <SkeletonTable rows={5} />}
       {isError && <ErrorRetry message="個股資料載入失敗" onRetry={() => refetch()} />}
 
       {data && (
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[400px] rounded-lg border border-zinc-800/50">
           <table className="w-full text-left">
-            <thead>
+            <thead className="sticky top-0 bg-zinc-900 z-10">
               {activeTab === 'today'  && <TodayHead  sort={sort} onSort={handleSort} />}
               {activeTab === 'period' && <PeriodHead sort={sort} onSort={handleSort} />}
               {activeTab === 'risk'   && <RiskHead   sort={sort} onSort={handleSort} />}
             </thead>
             <tbody className="divide-y divide-zinc-800/50">
               {sortedStocks.map((stock) => {
-                const isSelected = selectedStock?.stockId === stock.stockId
-                if (activeTab === 'today')  return <TodayRow  key={stock.stockId} stock={stock} isSelected={isSelected} onSelect={onSelectStock} />
-                if (activeTab === 'period') return <PeriodRow key={stock.stockId} stock={stock} isSelected={isSelected} onSelect={onSelectStock} />
-                return                             <RiskRow   key={stock.stockId} stock={stock} isSelected={isSelected} onSelect={onSelectStock} />
+                if (activeTab === 'today')  return <TodayRow  key={stock.stockId} stock={stock} onSelect={onSelectStock} />
+                if (activeTab === 'period') return <PeriodRow key={stock.stockId} stock={stock} onSelect={onSelectStock} />
+                return                             <RiskRow   key={stock.stockId} stock={stock} onSelect={onSelectStock} />
               })}
             </tbody>
           </table>
-          <p className="text-xs text-zinc-700 mt-2 px-1">點擊個股在右側查看詳情，再次點擊取消選取</p>
         </div>
       )}
     </Card>

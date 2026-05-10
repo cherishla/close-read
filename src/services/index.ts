@@ -62,7 +62,7 @@ export async function fetchSectorStocks(
 }
 
 export async function fetchIndexTrend(
-  period: 20 | 60,
+  period: 20 | 30 | 60,
   _date: string
 ): Promise<IndexTrendResponse> {
   await delay(300)
@@ -111,10 +111,12 @@ export async function fetchStockDetail(
 
 export async function fetchStockPrice(
   stockId: string,
-  _date: string
+  _date: string,
+  period: 20 | 60 = 20
 ): Promise<StockPriceResponse> {
   await delay(120)
-  return stockPriceMock[stockId] ?? defaultStockPriceMock
+  const mock = stockPriceMock[stockId] ?? defaultStockPriceMock
+  return { ...mock, data: mock.data.slice(-period) }
 }
 
 export async function fetchMarketNews(_date: string): Promise<MarketNewsResponse> {

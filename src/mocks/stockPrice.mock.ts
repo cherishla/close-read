@@ -2,9 +2,9 @@ import type { StockPriceResponse, StockPricePoint } from '../types'
 
 function mkOHLCV(stockId: string, trendBias = 0): StockPricePoint[] {
   const s = parseInt(stockId)
-  const start = new Date('2026-04-01')
+  const start = new Date('2026-02-08')
   let prev = 100
-  return Array.from({ length: 20 }, (_, i) => {
+  return Array.from({ length: 60 }, (_, i) => {
     const d = new Date(start)
     d.setDate(start.getDate() + i)
     const close  = Math.round((prev + Math.sin(s * 0.01 + i * 0.4) * 1.5 + trendBias * 0.18) * 100) / 100

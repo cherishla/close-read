@@ -37,9 +37,9 @@ export function buildStockChecks(
     (stock.monthChange > 0 ? 1 : -1) +
     (stock.quarterChange > 0 ? 1 : -1)
   const trend: StockCheck = trendScore >= 3
-    ? { label: '趨勢', value: '強', tone: 'positive', detail: 'RS 與區間表現同步偏強' }
+    ? { label: '趨勢', value: '強', tone: 'positive', detail: '相對強弱與區間表現同步偏強' }
     : trendScore <= -2
-      ? { label: '趨勢', value: '弱', tone: 'risk', detail: '區間表現與 RS 偏弱' }
+      ? { label: '趨勢', value: '弱', tone: 'risk', detail: '相對強弱與區間表現同步偏弱' }
       : { label: '趨勢', value: '中', tone: 'neutral', detail: '走勢仍需確認延續性' }
 
   const chipScore =

@@ -39,6 +39,7 @@ function generateSeries(
 }
 
 const DAYS_60 = tradingDays('2026-04-26', 60)
+const DAYS_30 = DAYS_60.slice(-30)
 const DAYS_20 = DAYS_60.slice(-20)
 
 function buildResponse(days: string[]): IndexTrendResponse {
@@ -64,7 +65,8 @@ function buildResponse(days: string[]): IndexTrendResponse {
   }
 }
 
-export const indexTrendMock: Record<20 | 60, IndexTrendResponse> = {
+export const indexTrendMock: Record<20 | 30 | 60, IndexTrendResponse> = {
   20: buildResponse(DAYS_20),
+  30: buildResponse(DAYS_30),
   60: buildResponse(DAYS_60),
 }

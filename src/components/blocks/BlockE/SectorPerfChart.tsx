@@ -19,7 +19,7 @@ const CATEGORY_COLOR: Record<Sector['category'], string> = {
   strong:           '#f87171',
   fundInWeak:       '#f97316',
   techStrongNoFund: '#facc15',
-  weak:             '#60a5fa',
+  weak:             '#4ade80',
 }
 
 function formatDate(d: string) {
@@ -56,19 +56,19 @@ export function SectorPerfChart({ sectorId, date, sectorCategory }: SectorPerfCh
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs text-zinc-500">區間表現 + 成交量（近 20 日）</p>
+        <p className="text-xs text-zinc-500">族群 vs 大盤走勢（近 20 日）</p>
         <div className="flex items-center gap-3 text-xs text-zinc-600">
           <span className="flex items-center gap-1">
             <span className="inline-block w-4 h-0.5" style={{ backgroundColor: lineColor }} />
-            產業%
+            族群漲跌%
           </span>
           <span className="flex items-center gap-1">
             <span className="inline-block w-4 border-t border-dashed border-zinc-500" />
-            加權%
+            加權指數（基準）
           </span>
           <span className="flex items-center gap-1">
             <span className="inline-block w-3 h-2.5 opacity-40" style={{ backgroundColor: lineColor }} />
-            量（億）
+            成交量（億）
           </span>
         </div>
       </div>

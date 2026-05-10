@@ -62,14 +62,14 @@ function applyFilters(stocks: StockWithSector[], f: Filters): StockWithSector[] 
 // ── colour helpers ────────────────────────────────────────────────
 
 function signColor(v: number) {
-  return v > 0 ? 'text-red-400' : v < 0 ? 'text-blue-400' : 'text-zinc-400'
+  return v > 0 ? 'text-red-400' : v < 0 ? 'text-green-400' : 'text-zinc-400'
 }
 
 function StreakBadge({ streak }: { streak: number }) {
   if (streak === 0) return null
-  if (streak >= 3)  return <span className="text-[10px] px-1 py-0.5 rounded bg-green-900/60 text-green-400 font-medium whitespace-nowrap">連買{streak}日</span>
-  if (streak <= -3) return <span className="text-[10px] px-1 py-0.5 rounded bg-blue-900/60 text-blue-400 font-medium whitespace-nowrap">連賣{Math.abs(streak)}日</span>
-  const color = streak > 0 ? 'text-green-700' : 'text-blue-700'
+  if (streak >= 3)  return <span className="text-[10px] px-1 py-0.5 rounded bg-red-900/60 text-red-400 font-medium whitespace-nowrap">連買{streak}日</span>
+  if (streak <= -3) return <span className="text-[10px] px-1 py-0.5 rounded bg-green-900/60 text-green-400 font-medium whitespace-nowrap">連賣{Math.abs(streak)}日</span>
+  const color = streak > 0 ? 'text-red-700' : 'text-green-700'
   return <span className={`text-[10px] ${color}`}>{streak > 0 ? '+' : ''}{streak}d</span>
 }
 
@@ -212,9 +212,9 @@ export function StockScreenerPanel({ date, onSelectStock }: StockScreenerPanelPr
             {hasFilters ? `篩選結果 ${results.length} 檔` : `全市場 ${results.length} 檔`}
             {results.length === 0 && <span className="ml-2 text-zinc-700">無符合條件的個股</span>}
           </p>
-          <div className="overflow-x-auto">
+          <div className="overflow-auto max-h-[400px] rounded-lg border border-zinc-800/50">
             <table className="w-full text-left">
-              <thead>
+              <thead className="sticky top-0 bg-zinc-900 z-10">
                 <tr className="border-b border-zinc-800">
                   <th className="py-2 px-2 text-xs text-zinc-500 font-medium">個股</th>
                   <th className="py-2 px-2 text-xs text-zinc-500 font-medium">族群</th>
@@ -249,7 +249,7 @@ export function StockScreenerPanel({ date, onSelectStock }: StockScreenerPanelPr
                         <StreakBadge streak={s.institutionalStreak} />
                       </div>
                     </td>
-                    <td className={`py-2 px-2 text-sm text-right font-medium tabular-nums ${s.concentration >= 70 ? 'text-red-400' : s.concentration <= 30 ? 'text-blue-400' : 'text-zinc-400'}`}>
+                    <td className={`py-2 px-2 text-sm text-right font-medium tabular-nums ${s.concentration >= 70 ? 'text-red-400' : s.concentration <= 30 ? 'text-green-400' : 'text-zinc-400'}`}>
                       {s.concentration}
                     </td>
                     <td className="py-2 px-2 text-right">
@@ -261,9 +261,6 @@ export function StockScreenerPanel({ date, onSelectStock }: StockScreenerPanelPr
                 ))}
               </tbody>
             </table>
-            {results.length > 0 && (
-              <p className="text-xs text-zinc-700 mt-2 px-1">點擊個股進入詳細研究頁</p>
-            )}
           </div>
         </>
       )}

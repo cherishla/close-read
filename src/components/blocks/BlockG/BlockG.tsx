@@ -15,6 +15,8 @@ import { ErrorRetry } from '../../ui/ErrorRetry'
 
 type BlockGProps = {
   date: string
+  collapsible?: boolean
+  defaultOpen?: boolean
 }
 
 const INDEX_CONFIG: Record<string, { color: string; name: string }> = {
@@ -61,8 +63,8 @@ function CustomTooltip({
   )
 }
 
-export function BlockG({ date }: BlockGProps) {
-  const [period, setPeriod] = useState<20 | 60>(20)
+export function BlockG({ date, collapsible, defaultOpen }: BlockGProps) {
+  const [period, setPeriod] = useState<20 | 30 | 60>(20)
   const { data, isLoading, isError, refetch } = useIndexTrend(period, date)
 
   const chartData = useMemo(() => {
@@ -80,11 +82,11 @@ export function BlockG({ date }: BlockGProps) {
     })
   }, [data])
 
-  const xTickInterval = period === 20 ? 3 : 9
+  const xTickInterval = period === 20 ? 3 : period === 30 ? 4 : 9
 
   const periodSelector = (
     <div className="flex gap-1">
-      {([20, 60] as const).map((p) => (
+      {([20, 30, 60] as const).map((p) => (
         <button
           key={p}
           onClick={() => setPeriod(p)}
@@ -101,7 +103,7 @@ export function BlockG({ date }: BlockGProps) {
   )
 
   return (
-    <Card title="G｜指數趨勢比較" action={periodSelector}>
+    <Card title="G｜指數趨勢比較" action={periodSelector} collapsible={collapsible} defaultOpen={defaultOpen}>
       {isLoading && (
         <div className="h-40 flex items-center justify-center">
           <div className="w-full h-32 bg-zinc-800/50 rounded animate-pulse" />
